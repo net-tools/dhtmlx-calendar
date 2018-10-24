@@ -1,0 +1,25 @@
+{
+    "name" : "net-tools/dhtmlx-calendar",
+	
+    "description" : "Composer library dhtmlx-calendar",
+	
+	"type": "library",
+	
+	"require" : {
+	},
+	
+    "license" : "GNU",
+
+    "authors": [
+        {
+            "name": "Pierre",
+            "email": "dev@nettools.ovh",
+            "role": "Developer"
+        },
+		{
+			"name":"https://dhtmlx.com/",
+			"role":"Developer"
+		}
+    ]
+
+}
