@@ -7,10 +7,11 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="format-detection" content="telephone=no">
     <link rel="stylesheet" href="dhtmlx-calendar.css">
-    <link rel="stylesheet" href="../src/codebase/dhtmlxcalendar.css">
-    <link rel="stylesheet" href="../src/codebase/fonts/font_roboto/roboto.css">
+    <link rel="stylesheet" href="../codebase/calendar.css?v=6.0.0">
+    <!--<link rel="stylesheet" href="../codebase/fonts/font_roboto/roboto.css">-->
    
-    <script src="../src/codebase/dhtmlxcalendar.js"></script>
+    <script src="../codebase/calendar.js?v=6.0.0"></script>
+    <script src="../helper/calendar.js"></script>
     <script src="dhtmlx-calendar.js"></script>
 
     
@@ -111,7 +112,7 @@
 		
 		loadi18n : function()
         {
-            test.loadScript('../src/i18n/fr.js', function(){alert('FR translations loaded !'); myCalendar.loadUserLanguage("fr");});
+            test.loadScript('../i18n/fr.js', function(){alert('FR translations loaded !'); myCalendar.loadUserLanguage("fr");});
         }		
 		
     }
@@ -137,10 +138,9 @@
     </div>
 	
 	<script>
+
+		var myCalendar = Helper.calendarPopup('input1', {dateFormat:"%d/%m/%Y"});
 		
-		var myCalendar = new dhtmlXCalendarObject(["input1"]);
-		myCalendar.setDateFormat("%d/%m/%y");
-		myCalendar.hideTime();
 		
 	</script>
 
