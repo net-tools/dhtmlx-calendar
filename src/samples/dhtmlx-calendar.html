@@ -112,7 +112,7 @@
 		
 		loadi18n : function()
         {
-            test.loadScript('../i18n/fr.js', function(){alert('FR translations loaded !'); myCalendar.loadUserLanguage("fr");});
+            test.loadScript('../i18n/fr.js', function(){alert('FR translations loaded !'); });
         }		
 		
     }
@@ -139,7 +139,7 @@
 	
 	<script>
 
-		var myCalendar = Helper.calendarPopup('input1', {dateFormat:"%d/%m/%Y"});
+		var myCalendar = CalendarHelper.popup('input1', {dateFormat:"%d/%m/%Y"});
 		
 		
 	</script>

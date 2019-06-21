@@ -1,7 +1,7 @@
-var Helper = {
+var CalendarHelper = {
 	
 	// constructor
-	calendarPopup : function(id, options)
+	popup : function(id, options)
 	{
 		var myCalendar = new dhx.Calendar(null, {
 				dateFormat:options.dateFormat || "%d/%m/%y",
