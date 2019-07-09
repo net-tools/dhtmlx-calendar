@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.0.0 GPL
+dhtmlxCalendar v.6.0.1 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -1276,6 +1276,7 @@ var setFormatters = {
         if (value === "PM") {
             date.setHours(date.getHours() + 12);
         }
+        ;
     },
 };
 function getFormatedDate(format, date) {
@@ -1289,14 +1290,18 @@ function getFormatedDate(format, date) {
             }
             return res + formatters[token.value](date);
         }
+        ;
     }, "");
 }
 exports.getFormatedDate = getFormatedDate;
+;
 var TokenType;
 (function (TokenType) {
     TokenType[TokenType["separator"] = 0] = "separator";
     TokenType[TokenType["datePart"] = 1] = "datePart";
 })(TokenType || (TokenType = {}));
+;
+;
 function tokenizeFormat(format) {
     var tokens = [];
     var currentSeparator = "";
@@ -1309,6 +1314,7 @@ function tokenizeFormat(format) {
                 });
                 currentSeparator = "";
             }
+            ;
             tokens.push({
                 type: TokenType.datePart,
                 value: format[i] + format[i + 1]
@@ -1318,15 +1324,19 @@ function tokenizeFormat(format) {
         else {
             currentSeparator += format[i];
         }
+        ;
     }
+    ;
     if (currentSeparator.length > 0) {
         tokens.push({
             type: TokenType.separator,
             value: currentSeparator
         });
     }
+    ;
     return tokens;
 }
+;
 function stringToDate(str, format) {
     var tokens = tokenizeFormat(format);
     var dateParts = [];
@@ -1336,6 +1346,10 @@ function stringToDate(str, format) {
         var token = tokens_1[_i];
         if (token.type === TokenType.separator) {
             var sepratorIndex = str.indexOf(token.value, index);
+            if (sepratorIndex === -1) {
+                throw ('Incorrect date, see docs: https://docs.dhtmlx.com/suite/calendar__api__calendar_dateformat_config.html');
+            }
+            ;
             if (formatter) {
                 dateParts.push({
                     formatter: formatter,
@@ -1348,23 +1362,30 @@ function stringToDate(str, format) {
         else if (token.type === TokenType.datePart) {
             formatter = token.value;
         }
+        ;
     }
+    ;
     if (formatter) {
         dateParts.push({
             formatter: formatter,
             value: str.slice(index)
         });
     }
+    ;
     var date = new Date();
+    dateParts.reverse();
     for (var _a = 0, dateParts_1 = dateParts; _a < dateParts_1.length; _a++) {
         var datePart = dateParts_1[_a];
         if (setFormatters[datePart.formatter]) {
             setFormatters[datePart.formatter](date, datePart.value);
         }
+        ;
     }
+    ;
     return date;
 }
 exports.stringToDate = stringToDate;
+;
 
 
 /***/ }),
@@ -1465,7 +1486,7 @@ function message(props) {
         messageBox.innerHTML = props.html;
     }
     else {
-        messageBox.innerHTML = "<span class=\"dhx_message__text\">" + props.text + "</span>\n\t\t" + (props.icon ? "<span class=\"dhx_message__icon " + props.icon + "\"></span>" : "");
+        messageBox.innerHTML = "<span class=\"dhx_message__text\">" + props.text + "</span>\n\t\t" + (props.icon ? "<span class=\"dhx_message__icon dxi " + props.icon + "\"></span>" : "");
     }
     var parent = props.node ? html_1.toNode(props.node) : document.body;
     var position = getComputedStyle(parent).position;
@@ -2014,8 +2035,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var en_1 = __webpack_require__(9);
 var common_1 = __webpack_require__(10);
 function confirm(props) {
-    var apply = props.buttons && props.buttons[0] ? props.buttons[0] : en_1.default.apply;
-    var reject = props.buttons && props.buttons[1] ? props.buttons[1] : en_1.default.reject;
+    var apply = props.buttons && props.buttons[1] ? props.buttons[1] : en_1.default.apply;
+    var reject = props.buttons && props.buttons[0] ? props.buttons[0] : en_1.default.reject;
     var unblock = common_1.blockScreen(props.blockerCss);
     return new Promise(function (res) {
         var answer = function (val) {
@@ -2026,7 +2047,7 @@ function confirm(props) {
         };
         var confirmBox = document.createElement("div");
         confirmBox.className = "dhx_alert dhx_alert--confirm" + (props.css ? " " + props.css : "");
-        confirmBox.innerHTML = "\n\t\t\t<div class=\"dhx_alert__header\">\n\t\t\t\t" + props.header + "\n\t\t\t</div>\n\t\t\t<div class=\"dhx_alert__content\">" + props.text + "</div>\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? ("dhx_alert__footer--" + props.buttonsAlignment) : "") + "\">\n\t\t\t\t<button class=\"dhx_alert__confirm-reject dhx_button dhx_button--view_link dhx_button--color_primary dhx_button--size_medium\">" + reject + "</button>\n\t\t\t\t<button class=\"dhx_alert__confirm-aply dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t</div>";
+        confirmBox.innerHTML = "\n\t\t\t<div class=\"dhx_alert__header\">\n\t\t\t\t" + props.header + "\n\t\t\t</div>\n\t\t\t<div class=\"dhx_alert__content\">" + props.text + "</div>\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? ("dhx_alert__footer--" + props.buttonsAlignment) : "") + "\">\n\t\t\t\t<button class=\"dhx_alert__confirm-aply dhx_button dhx_button--view_link dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t\t<button class=\"dhx_alert__confirm-reject dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + reject + "</button>\t\t\t\t\n\t\t\t</div>";
         document.body.appendChild(confirmBox);
         confirmBox.querySelector(".dhx_alert__confirm-reject").focus();
         var clickHandler = function (e) {
@@ -5837,17 +5858,17 @@ var Slider = /** @class */ (function (_super) {
     Slider.prototype.focus = function (extra) {
         this.getRootView().refs[extra ? "extraRunner" : "runner"].el.focus();
     };
-    Slider.prototype.getValue = function (asArray) {
+    Slider.prototype.getValue = function () {
         var res;
         if (this.config.range) {
             var a = this._getValue(this._currentPosition);
             var b = this._getValue(this._extraCurrentPosition);
-            res = a > b ? [b, a] : [a, b];
+            res = a < b ? [a, b] : [b, a];
         }
         else {
             res = [this._getValue(this._currentPosition)];
         }
-        return asArray ? res : res.join(",");
+        return res;
     };
     Slider.prototype.setValue = function (value) {
         var old = this._getValue(this._currentPosition);
@@ -5859,8 +5880,14 @@ var Slider = /** @class */ (function (_super) {
             this.events.fire(types_1.SliderEvents.change, [value[1], oldExtra, true]);
         }
         else {
-            this._setValue(value);
-            this.events.fire(types_1.SliderEvents.change, [value, old, false]);
+            value = parseFloat(value);
+            if (!isNaN(value)) {
+                this._setValue(value);
+                this.events.fire(types_1.SliderEvents.change, [value, old, false]);
+            }
+            else {
+                throw new Error("Wrong value type, for more info check documentation https://docs.dhtmlx.com/suite/slider__api__slider_setvalue_method.html");
+            }
         }
         this.paint();
     };
