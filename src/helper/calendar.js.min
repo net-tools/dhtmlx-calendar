@@ -1,0 +1,2 @@
+'use strict';
+var CalendarHelper={popup:function(e,c){var a=new dhx.Calendar(null,{dateFormat:c.dateFormat||"%d/%m/%y",weekStart:c.weekStart||"monday",css:c.css||"dhx_widget--bordered"}),d=new dhx.Popup;d.attach(a);var b=document.getElementById(e);b.addEventListener("click",function(){""!=b.value?a.setValue(b.value):a.setValue(new Date);d.show(b)});a.events.on("change",function(){b.value=a.getValue();d.hide()});return a}};
