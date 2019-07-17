@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.0.1 GPL
+dhtmlxCalendar v.6.0.2 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -2318,15 +2318,15 @@ var Popup = /** @class */ (function (_super) {
         if (attached) {
             this.attach(attached);
         }
+        this._popup.style.left = "0";
+        this._popup.style.top = "0";
+        document.body.appendChild(this._popup);
+        this._setPopupSize(node, config);
+        this._isActive = true;
         setTimeout(function () {
-            _this._popup.style.left = "0";
-            _this._popup.style.top = "0";
-            document.body.appendChild(_this._popup);
-            _this._setPopupSize(node, config);
-            _this._isActive = true;
             _this.events.fire(types_1.PopupEvents.afterShow, [node]);
             _this._outerClickDestructor = _this._detectOuterClick(node);
-        });
+        }, 100);
     };
     Popup.prototype.hide = function () {
         this._hide(false, null);
@@ -6054,6 +6054,7 @@ var Slider = /** @class */ (function (_super) {
         this._handlers = {
             showHelper: function (e) {
                 e.preventDefault();
+                e.stopPropagation();
                 _this._helper.show(e.target);
             },
             onmousedown: function (e) {
