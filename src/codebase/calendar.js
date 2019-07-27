@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.0.2 GPL
+dhtmlxCalendar v.6.0.3 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -2035,8 +2035,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var en_1 = __webpack_require__(9);
 var common_1 = __webpack_require__(10);
 function confirm(props) {
-    var apply = props.buttons && props.buttons[1] ? props.buttons[1] : en_1.default.apply;
-    var reject = props.buttons && props.buttons[0] ? props.buttons[0] : en_1.default.reject;
+    var apply = props.buttons && props.buttons[0] ? props.buttons[0] : en_1.default.apply;
+    var reject = props.buttons && props.buttons[1] ? props.buttons[1] : en_1.default.reject;
     var unblock = common_1.blockScreen(props.blockerCss);
     return new Promise(function (res) {
         var answer = function (val) {
@@ -2047,7 +2047,7 @@ function confirm(props) {
         };
         var confirmBox = document.createElement("div");
         confirmBox.className = "dhx_alert dhx_alert--confirm" + (props.css ? " " + props.css : "");
-        confirmBox.innerHTML = "\n\t\t\t<div class=\"dhx_alert__header\">\n\t\t\t\t" + props.header + "\n\t\t\t</div>\n\t\t\t<div class=\"dhx_alert__content\">" + props.text + "</div>\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? ("dhx_alert__footer--" + props.buttonsAlignment) : "") + "\">\n\t\t\t\t<button class=\"dhx_alert__confirm-aply dhx_button dhx_button--view_link dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t\t<button class=\"dhx_alert__confirm-reject dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + reject + "</button>\t\t\t\t\n\t\t\t</div>";
+        confirmBox.innerHTML = "\n\t\t\t<div class=\"dhx_alert__header\">\n\t\t\t\t" + props.header + "\n\t\t\t</div>\n\t\t\t<div class=\"dhx_alert__content\">" + props.text + "</div>\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? ("dhx_alert__footer--" + props.buttonsAlignment) : "") + "\">\n\t\t\t\t<button class=\"dhx_alert__confirm-aply dhx_button dhx_button--view_link dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t\t<button class=\"dhx_alert__confirm-reject dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + reject + "</button>\n\t\t\t</div>";
         document.body.appendChild(confirmBox);
         confirmBox.querySelector(".dhx_alert__confirm-reject").focus();
         var clickHandler = function (e) {
@@ -4655,7 +4655,7 @@ var Calendar = /** @class */ (function (_super) {
                                 _this.showDate(null, types_1.ViewMode.days);
                             }
                             else {
-                                var newDate = DateHelper_1.DateHelper.fromYearAndMonth(_this._selected.getFullYear(), date);
+                                var newDate = DateHelper_1.DateHelper.fromYearAndMonth(_this._currentDate.getFullYear() || _this._selected.getFullYear(), date);
                                 if (!_this.events.fire(types_1.CalendarEvents.beforeChange, [newDate, oldDate, true])) {
                                     return;
                                 }
@@ -5136,6 +5136,9 @@ var Timepicker = /** @class */ (function (_super) {
     Timepicker.prototype._initEvents = function () {
         var _this = this;
         this._hoursSlider.events.on(ts_slider_1.SliderEvents.change, function (value) {
+            if (value < _this._hoursSlider.config.min || value > _this._hoursSlider.config.max) {
+                return;
+            }
             if (_this.config.timeFormat === 12) {
                 _this._time.isAM = value < 12;
                 _this._time.h = value % 12 || 12;
@@ -5147,6 +5150,9 @@ var Timepicker = /** @class */ (function (_super) {
             _this._inputsView.paint();
         });
         this._minutesSlider.events.on(ts_slider_1.SliderEvents.change, function (value) {
+            if (value < _this._minutesSlider.config.min || value > _this._minutesSlider.config.max) {
+                return;
+            }
             _this._time.m = value;
             _this.events.fire(types_1.TimepickerEvents.change, [_this.getValue()]);
             _this._inputsView.paint();
