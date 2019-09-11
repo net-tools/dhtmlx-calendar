@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.0.3 GPL
+dhtmlxCalendar v.6.1.4 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -218,6 +218,10 @@ function range(from, to) {
     return result;
 }
 exports.range = range;
+function isNumeric(val) {
+    return !isNaN(val - parseFloat(val));
+}
+exports.isNumeric = isNumeric;
 
 
 /***/ }),
@@ -710,10 +714,10 @@ module.exports = g;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var locale = {
-    monthShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    month: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-    weekdaysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-    weekdays: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Monday"],
+    monthsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Monday"],
     cancel: "Cancel"
 };
 exports.default = locale;
@@ -1186,18 +1190,18 @@ var formatters = {
     },
     "%j": function (date) { return date.getDate(); },
     "%l": function (date) {
-        return en_1.default.weekdays[date.getDay()];
+        return en_1.default.days[date.getDay()];
     },
     "%D": function (date) {
-        return en_1.default.weekdaysShort[date.getDay()];
+        return en_1.default.daysShort[date.getDay()];
     },
     "%m": function (date) {
         var month = date.getMonth() + 1;
         return month < 10 ? "0" + month : month;
     },
     "%n": function (date) { return date.getMonth() + 1; },
-    "%M": function (date) { return en_1.default.monthShort[date.getMonth()]; },
-    "%F": function (date) { return en_1.default.month[date.getMonth()]; },
+    "%M": function (date) { return en_1.default.monthsShort[date.getMonth()]; },
+    "%F": function (date) { return en_1.default.months[date.getMonth()]; },
     "%y": function (date) { return date.getFullYear().toString().slice(2); },
     "%Y": function (date) { return date.getFullYear(); },
     "%h": function (date) {
@@ -1224,48 +1228,88 @@ var formatters = {
 };
 var setFormatters = {
     "%d": function (date, value) {
-        date.setDate(Number(value));
+        var check = /(^([0-9][0-9])$)/i.test(value);
+        check
+            ? date.setDate(Number(value))
+            : date.setDate(Number(1));
     },
     "%j": function (date, value) {
-        date.setDate(Number(value));
+        var check = /(^([0-9]?[0-9])$)/i.test(value);
+        check
+            ? date.setDate(Number(value))
+            : date.setDate(Number(1));
     },
     "%m": function (date, value) {
-        date.setMonth(Number(value) - 1);
+        var check = /(^([0-9][0-9])$)/i.test(value);
+        check
+            ? date.setMonth(Number(value) - 1)
+            : date.setMonth(Number(0));
     },
     "%n": function (date, value) {
-        date.setMonth(Number(value) - 1);
+        var check = /(^([0-9]?[0-9])$)/i.test(value);
+        check
+            ? date.setMonth(Number(value) - 1)
+            : date.setMonth(Number(0));
     },
     "%M": function (date, value) {
-        var index = core_1.findIndex(en_1.default.monthShort, function (v) { return v === value; });
-        date.setMonth(index);
+        var index = core_1.findIndex(en_1.default.monthsShort, function (v) { return v === value; });
+        index === -1
+            ? date.setMonth(0)
+            : date.setMonth(index);
     },
     "%F": function (date, value) {
-        var index = core_1.findIndex(en_1.default.month, function (v) { return v === value; });
-        date.setMonth(index);
+        var index = core_1.findIndex(en_1.default.months, function (v) { return v === value; });
+        index === -1
+            ? date.setMonth(0)
+            : date.setMonth(index);
     },
     "%y": function (date, value) {
-        date.setFullYear(Number("20" + value));
+        var check = /(^([0-9][0-9])$)/i.test(value);
+        check
+            ? date.setFullYear(Number("20" + value))
+            : date.setFullYear(Number("2000"));
     },
     "%Y": function (date, value) {
-        date.setFullYear(Number(value));
+        var check = /(^([0-9][0-9][0-9][0-9])$)/i.test(value);
+        check
+            ? date.setFullYear(Number(value))
+            : date.setFullYear(Number("2000"));
     },
     "%h": function (date, value) {
-        date.setHours(Number(value));
+        var check = /(^0[1-9]|1[0-2]$)/i.test(value);
+        check
+            ? date.setHours(Number(value))
+            : date.setHours(Number(0));
     },
     "%g": function (date, value) {
-        date.setHours(Number(value));
+        var check = /(^[1-9]$)|(^0[1-9]|1[0-2]$)/i.test(value);
+        check
+            ? date.setHours(Number(value))
+            : date.setHours(Number(0));
     },
     "%H": function (date, value) {
-        date.setHours(Number(value));
+        var check = /(^[0-9][0-3]$)/i.test(value);
+        check
+            ? date.setHours(Number(value))
+            : date.setHours(Number(0));
     },
     "%G": function (date, value) {
-        date.setHours(Number(value));
+        var check = /(^([0-9]$)|[0-9][0-3]$)/i.test(value);
+        check
+            ? date.setHours(Number(value))
+            : date.setHours(Number(0));
     },
     "%i": function (date, value) {
-        date.setMinutes(Number(value));
+        var check = /(^([0-5][0-9])$)/i.test(value);
+        check
+            ? date.setMinutes(Number(value))
+            : date.setMinutes(Number(0));
     },
     "%s": function (date, value) {
-        date.setSeconds(Number(value));
+        var check = /(^([0-5][0-9])$)/i.test(value);
+        check
+            ? date.setSeconds(Number(value))
+            : date.setSeconds(Number(0));
     },
     "%a": function (date, value) {
         if (value === "pm") {
@@ -1276,7 +1320,6 @@ var setFormatters = {
         if (value === "PM") {
             date.setHours(date.getHours() + 12);
         }
-        ;
     },
 };
 function getFormatedDate(format, date) {
@@ -1290,18 +1333,14 @@ function getFormatedDate(format, date) {
             }
             return res + formatters[token.value](date);
         }
-        ;
     }, "");
 }
 exports.getFormatedDate = getFormatedDate;
-;
 var TokenType;
 (function (TokenType) {
     TokenType[TokenType["separator"] = 0] = "separator";
     TokenType[TokenType["datePart"] = 1] = "datePart";
 })(TokenType || (TokenType = {}));
-;
-;
 function tokenizeFormat(format) {
     var tokens = [];
     var currentSeparator = "";
@@ -1314,7 +1353,6 @@ function tokenizeFormat(format) {
                 });
                 currentSeparator = "";
             }
-            ;
             tokens.push({
                 type: TokenType.datePart,
                 value: format[i] + format[i + 1]
@@ -1324,20 +1362,16 @@ function tokenizeFormat(format) {
         else {
             currentSeparator += format[i];
         }
-        ;
     }
-    ;
     if (currentSeparator.length > 0) {
         tokens.push({
             type: TokenType.separator,
             value: currentSeparator
         });
     }
-    ;
     return tokens;
 }
-;
-function stringToDate(str, format) {
+function stringToDate(str, format, validate) {
     var tokens = tokenizeFormat(format);
     var dateParts = [];
     var index = 0;
@@ -1347,9 +1381,11 @@ function stringToDate(str, format) {
         if (token.type === TokenType.separator) {
             var sepratorIndex = str.indexOf(token.value, index);
             if (sepratorIndex === -1) {
-                throw ('Incorrect date, see docs: https://docs.dhtmlx.com/suite/calendar__api__calendar_dateformat_config.html');
+                if (validate) {
+                    return false;
+                }
+                throw new Error(("Incorrect date, see docs: https://docs.dhtmlx.com/suite/calendar__api__calendar_dateformat_config.html"));
             }
-            ;
             if (formatter) {
                 dateParts.push({
                     formatter: formatter,
@@ -1362,16 +1398,13 @@ function stringToDate(str, format) {
         else if (token.type === TokenType.datePart) {
             formatter = token.value;
         }
-        ;
     }
-    ;
     if (formatter) {
         dateParts.push({
             formatter: formatter,
             value: str.slice(index)
         });
     }
-    ;
     var date = new Date();
     dateParts.reverse();
     for (var _a = 0, dateParts_1 = dateParts; _a < dateParts_1.length; _a++) {
@@ -1379,13 +1412,10 @@ function stringToDate(str, format) {
         if (setFormatters[datePart.formatter]) {
             setFormatters[datePart.formatter](date, datePart.value);
         }
-        ;
     }
-    ;
-    return date;
+    return validate ? true : date;
 }
 exports.stringToDate = stringToDate;
-;
 
 
 /***/ }),
@@ -1558,7 +1588,7 @@ function alert(props) {
     return new Promise(function (res) {
         var alertBox = document.createElement("div");
         alertBox.className = "dhx_alert " + (props.css || "");
-        alertBox.innerHTML = "\n\t\t\t<div class=\"dhx_alert__header\">\n\t\t\t\t" + props.header + "\n\t\t\t</div>\n\t\t\t<div class=\"dhx_alert__content\">" + props.text + "</div>\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? ("dhx_alert__footer--" + props.buttonsAlignment) : "") + "\">\n\t\t\t\t<button class=\"dhx_alert__apply-button dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t</div>";
+        alertBox.innerHTML = "\n\t\t\t" + (props.header ? "<div class=\"dhx_alert__header\"> " + props.header + " </div>" : "") + "\n\t\t\t" + (props.text ? "<div class=\"dhx_alert__content\">" + props.text + "</div>" : "") + "\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? ("dhx_alert__footer--" + props.buttonsAlignment) : "") + "\">\n\t\t\t\t<button class=\"dhx_alert__apply-button dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t</div>";
         document.body.appendChild(alertBox);
         alertBox.querySelector(".dhx_alert__apply-button").focus();
         alertBox.querySelector("button").addEventListener("click", function () {
@@ -2047,7 +2077,7 @@ function confirm(props) {
         };
         var confirmBox = document.createElement("div");
         confirmBox.className = "dhx_alert dhx_alert--confirm" + (props.css ? " " + props.css : "");
-        confirmBox.innerHTML = "\n\t\t\t<div class=\"dhx_alert__header\">\n\t\t\t\t" + props.header + "\n\t\t\t</div>\n\t\t\t<div class=\"dhx_alert__content\">" + props.text + "</div>\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? ("dhx_alert__footer--" + props.buttonsAlignment) : "") + "\">\n\t\t\t\t<button class=\"dhx_alert__confirm-aply dhx_button dhx_button--view_link dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t\t<button class=\"dhx_alert__confirm-reject dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + reject + "</button>\n\t\t\t</div>";
+        confirmBox.innerHTML = "\n\t\t" + (props.header ? "<div class=\"dhx_alert__header\"> " + props.header + " </div>" : "") + "\n\t\t" + (props.text ? "<div class=\"dhx_alert__content\">" + props.text + "</div>" : "") + "\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? ("dhx_alert__footer--" + props.buttonsAlignment) : "") + "\">\n\t\t\t\t<button class=\"dhx_alert__confirm-aply dhx_button dhx_button--view_link dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t\t<button class=\"dhx_alert__confirm-reject dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + reject + "</button>\n\t\t\t</div>";
         document.body.appendChild(confirmBox);
         confirmBox.querySelector(".dhx_alert__confirm-reject").focus();
         var clickHandler = function (e) {
@@ -2416,6 +2446,25 @@ var Popup = /** @class */ (function (_super) {
         var _b = html_1.fitPosition(node, __assign({ centering: true, mode: html_1.Position.bottom }, config, { width: width, height: height })), left = _b.left, top = _b.top;
         this._popup.style.left = left;
         this._popup.style.top = top;
+        if (config.indent && config.indent !== 0) {
+            switch (config.mode) {
+                case html_1.Position.top:
+                    this._popup.style.top = parseInt(this._popup.style.top.slice(0, -2), null) - parseInt(config.indent.toString(), null) + "px";
+                    break;
+                case html_1.Position.bottom:
+                    this._popup.style.top = parseInt(this._popup.style.top.slice(0, -2), null) + parseInt(config.indent.toString(), null) + "px";
+                    break;
+                case html_1.Position.left:
+                    this._popup.style.left = parseInt(this._popup.style.left.slice(0, -2), null) - parseInt(config.indent.toString(), null) + "px";
+                    break;
+                case html_1.Position.right:
+                    this._popup.style.left = parseInt(this._popup.style.left.slice(0, -2), null) + parseInt(config.indent.toString(), null) + "px";
+                    break;
+                default:
+                    this._popup.style.top = parseInt(this._popup.style.top.slice(0, -2), null) + parseInt(config.indent.toString(), null) + "px";
+                    break;
+            }
+        }
     };
     Popup.prototype._detectOuterClick = function (node) {
         var _this = this;
@@ -4431,11 +4480,11 @@ var dom_1 = __webpack_require__(1);
 var events_1 = __webpack_require__(4);
 var view_1 = __webpack_require__(3);
 var ts_timepicker_1 = __webpack_require__(30);
-var DateHelper_1 = __webpack_require__(39);
+var DateHelper_1 = __webpack_require__(40);
 var DateFormatter_1 = __webpack_require__(15);
-var helper_1 = __webpack_require__(40);
+var helper_1 = __webpack_require__(41);
 var en_1 = __webpack_require__(7);
-var types_1 = __webpack_require__(41);
+var types_1 = __webpack_require__(42);
 var Calendar = /** @class */ (function (_super) {
     __extends(Calendar, _super);
     function Calendar(container, config) {
@@ -4794,7 +4843,7 @@ var Calendar = /** @class */ (function (_super) {
     Calendar.prototype._drawCalendar = function () {
         var date = this._currentDate;
         var weekDays = this.config.weekStart === "monday"
-            ? en_1.default.weekdaysShort.slice(1).concat([en_1.default.weekdaysShort[0]]) : en_1.default.weekdaysShort;
+            ? en_1.default.daysShort.slice(1).concat([en_1.default.daysShort[0]]) : en_1.default.daysShort;
         var weekDaysHeader = weekDays.map(function (day) { return dom_1.el(".dhx_calendar-weekday", day); });
         var data = this._getData(date);
         var content = [];
@@ -4823,7 +4872,7 @@ var Calendar = /** @class */ (function (_super) {
             (this.config.weekNumbers ? " dhx_calendar--with_week-numbers" : "");
         return dom_1.el("div", __assign({ class: widgetClass, style: { width: this.config.weekNumbers ? "calc(" + this.config.width + " + 48px )" : this.config.width } }, this._handlers), [
             dom_1.el(".dhx_calendar__wrapper", [
-                this._drawHeader(dom_1.el("button.dhx_calendar-action__show-month.dhx_button.dhx_button--view_link.dhx_button--size_small.dhx_button--color_secondary.dhx_button--circle", en_1.default.month[date.getMonth()] + " " + date.getFullYear())),
+                this._drawHeader(dom_1.el("button.dhx_calendar-action__show-month.dhx_button.dhx_button--view_link.dhx_button--size_small.dhx_button--color_secondary.dhx_button--circle", en_1.default.months[date.getMonth()] + " " + date.getFullYear())),
                 this.config.weekNumbers && dom_1.el(".dhx_calendar__dates-wrapper", [
                     dom_1.el(".dhx_calendar__weekdays", weekDaysHeader),
                     dom_1.el(".dhx_calendar__days", content),
@@ -4855,7 +4904,7 @@ var Calendar = /** @class */ (function (_super) {
             } }, this._handlers), [
             dom_1.el(".dhx_calendar__wrapper", [
                 this._drawHeader(dom_1.el("button.dhx_calendar-action__show-year.dhx_button.dhx_button--view_link.dhx_button--size_small.dhx_button--color_secondary.dhx_button--circle", date.getFullYear())),
-                dom_1.el(".dhx_calendar__months", en_1.default.monthShort.map(function (item, i) { return dom_1.el("div", {
+                dom_1.el(".dhx_calendar__months", en_1.default.monthsShort.map(function (item, i) { return dom_1.el("div", {
                     class: "dhx_calendar-month" + (currentMonth === i && currentYear === date.getFullYear() ? " dhx_calendar-month--selected" : ""),
                     tabIndex: 1,
                     _date: i
@@ -4964,6 +5013,7 @@ var view_1 = __webpack_require__(3);
 var ts_layout_1 = __webpack_require__(32);
 var ts_slider_1 = __webpack_require__(35);
 var en_1 = __webpack_require__(38);
+var helper_1 = __webpack_require__(39);
 var types_1 = __webpack_require__(14);
 var Timepicker = /** @class */ (function (_super) {
     __extends(Timepicker, _super);
@@ -5032,6 +5082,11 @@ var Timepicker = /** @class */ (function (_super) {
         }
         this._hoursSlider.setValue(h);
         this._minutesSlider.setValue(m);
+        if (helper_1.isTimeCheck(value)) {
+            this._hoursSlider.setValue(0);
+            this._minutesSlider.setValue(m);
+            this._time.isAM = true;
+        }
         this._inputsView.paint();
     };
     Timepicker.prototype.destructor = function () {
@@ -5509,8 +5564,10 @@ var Cell = /** @class */ (function (_super) {
     };
     Cell.prototype.toVDOM = function (nodes) {
         var _a;
-        var conf = this.config;
-        if (conf.hidden) {
+        if (this.config === null) {
+            this.config = {};
+        }
+        if (this.config.hidden) {
             return;
         }
         var style = this._calculateStyle();
@@ -5731,6 +5788,9 @@ var Cell = /** @class */ (function (_super) {
     };
     Cell.prototype._calculateStyle = function () {
         var config = this.config;
+        if (!config) {
+            return;
+        }
         var style = {};
         if (this._isXDirection()) {
             if (config.width !== undefined && !config.collapsed) {
@@ -6004,7 +6064,7 @@ var Slider = /** @class */ (function (_super) {
         var val = value * (max - min) / 100;
         var remain = val % step;
         var rounder = remain >= step / 2 ? step : 0;
-        var result = min + val - remain + rounder;
+        var result = Number(min) + Number(val) - remain + rounder;
         return +result.toFixed(5);
     };
     Slider.prototype._setValue = function (val, forExtra) {
@@ -6328,7 +6388,7 @@ var Slider = /** @class */ (function (_super) {
         var length = 0;
         var index = 0;
         while (length < 1) {
-            var tickValue = +(min + length * len).toFixed(5);
+            var tickValue = +(Number(min) + length * len).toFixed(5);
             var isMultiple = index % majorTick === 0;
             positions.push({
                 position: (this._isInverse() ? (1 - length) * 100 : length * 100) + "%",
@@ -6414,7 +6474,7 @@ var KeyManager = /** @class */ (function () {
             else {
                 key = e.key;
             }
-            var code = comp + key.toLowerCase();
+            var code = comp + (key && key.toLowerCase());
             var actions = _this._keysStorage[code];
             if (actions) {
                 for (var i = 0; i < actions.length; i++) {
@@ -6498,6 +6558,22 @@ exports.default = locale;
 
 /***/ }),
 /* 39 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+/**
+ * This function is designed to resolve conflicts with the time setting for the 12 hour format.
+ */
+function isTimeCheck(value) {
+    return /(^12:[0-5][0-9]?AM$)/i.test(value);
+}
+exports.isTimeCheck = isTimeCheck;
+
+
+/***/ }),
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6588,7 +6664,7 @@ exports.DateHelper = DateHelper;
 
 
 /***/ }),
-/* 40 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6598,7 +6674,7 @@ exports.linkButtonClasses = ".dhx_button.dhx_button--view_link.dhx_button--icon.
 
 
 /***/ }),
-/* 41 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
