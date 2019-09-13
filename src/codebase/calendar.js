@@ -1,12 +1,12 @@
 /*
 @license
 
-dhtmlxCalendar v.6.1.4 GPL
+dhtmlxCalendar v.6.1.5 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
 Please contact sales@dhtmlx.com. Usage without proper license is prohibited.
-(c) Dinamenta, UAB.
+(c) XB Software.
 
 */
 if (window.dhx){ window.dhx_legacy = dhx; delete window.dhx; }(function webpackUniversalModuleDefinition(root, factory) {
@@ -1511,7 +1511,7 @@ function message(props) {
     }
     props.position = props.position || types_1.MessageContainerPosition.topRight;
     var messageBox = document.createElement("div");
-    messageBox.className = "dhx_message " + (props.css || "");
+    messageBox.className = "dhx_widget dhx_message " + (props.css || "");
     if (props.html) {
         messageBox.innerHTML = props.html;
     }
@@ -1587,7 +1587,7 @@ function alert(props) {
     var unblock = common_1.blockScreen(props.blockerCss);
     return new Promise(function (res) {
         var alertBox = document.createElement("div");
-        alertBox.className = "dhx_alert " + (props.css || "");
+        alertBox.className = "dhx_widget dhx_alert " + (props.css || "");
         alertBox.innerHTML = "\n\t\t\t" + (props.header ? "<div class=\"dhx_alert__header\"> " + props.header + " </div>" : "") + "\n\t\t\t" + (props.text ? "<div class=\"dhx_alert__content\">" + props.text + "</div>" : "") + "\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? ("dhx_alert__footer--" + props.buttonsAlignment) : "") + "\">\n\t\t\t\t<button class=\"dhx_alert__apply-button dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t</div>";
         document.body.appendChild(alertBox);
         alertBox.querySelector(".dhx_alert__apply-button").focus();
@@ -2076,7 +2076,7 @@ function confirm(props) {
             res(val);
         };
         var confirmBox = document.createElement("div");
-        confirmBox.className = "dhx_alert dhx_alert--confirm" + (props.css ? " " + props.css : "");
+        confirmBox.className = "dhx_widget dhx_alert dhx_alert--confirm" + (props.css ? " " + props.css : "");
         confirmBox.innerHTML = "\n\t\t" + (props.header ? "<div class=\"dhx_alert__header\"> " + props.header + " </div>" : "") + "\n\t\t" + (props.text ? "<div class=\"dhx_alert__content\">" + props.text + "</div>" : "") + "\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? ("dhx_alert__footer--" + props.buttonsAlignment) : "") + "\">\n\t\t\t\t<button class=\"dhx_alert__confirm-aply dhx_button dhx_button--view_link dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t\t<button class=\"dhx_alert__confirm-reject dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + reject + "</button>\n\t\t\t</div>";
         document.body.appendChild(confirmBox);
         confirmBox.querySelector(".dhx_alert__confirm-reject").focus();
@@ -2172,7 +2172,7 @@ function showTooltip(node, text, position, css, force) {
     var rects = node.getBoundingClientRect();
     tooltipText.textContent = text;
     document.body.appendChild(tooltipBox);
-    tooltipBox.className = "dhx_tooltip" + (force ? " dhx_tooltip--forced" : "");
+    tooltipBox.className = "dhx_widget dhx_tooltip" + (force ? " dhx_tooltip--forced" : "");
     var _a = tooltipBox.getBoundingClientRect(), width = _a.width, height = _a.height;
     var _b = findPosition(rects, position, width, height), left = _b.left, top = _b.top, pos = _b.pos;
     switch (pos) {
@@ -5102,7 +5102,7 @@ var Timepicker = /** @class */ (function (_super) {
         var _this = this;
         var layoutConfig = {
             gravity: false,
-            css: "dhx_timepicker " +
+            css: "dhx_widget dhx_timepicker " +
                 (this.config.css ? this.config.css : "") +
                 (this.config.actions ? " dhx_timepicker--with-actions" : ""),
             rows: [
@@ -6294,7 +6294,7 @@ var Slider = /** @class */ (function (_super) {
         ]);
     };
     Slider.prototype._drawSlider = function () {
-        return dom_1.el(".dhx_slider__track-holder", 
+        return dom_1.el(".dhx_widget.dhx_slider__track-holder", 
         // (this.config.mode === Direction.vertical ? ".dhx_slider--vertical" : ".dhx_slider--horizontal"),
         {
             dhx_widget_id: this._uid,
