@@ -1,3 +1,27 @@
+Version 6.2.1 (October 25, 2019)
+----------------------------
+
+###Fixes
+
+- Issue with the setValue() method
+
+Version 6.2.0 (October 23, 2019)
+----------------------------
+
+### New functionality
+
+- The ability to select a range of dates in one calendar
+
+### Updates
+
+- The possibility to set the start and end dates for a calendar in the range mode via the setValue() method
+- The ability to get the start and end dates from the selected range of dates in the calendar via the getValue() method
+
+### Fixes
+
+- Issues with months selection
+- Issues with the setValue() method
+
 Version 6.1.7 (October 10, 2019)
 ----------------------------
 

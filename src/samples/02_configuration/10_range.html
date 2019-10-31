@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<!-- meta block -->
-		<title>Timepicker in Calendar - DHTMLX Calendar</title>
+		<title>Range - DHTMLX Calendar</title>
 		<meta name="description" content="Check interactive samples of DHTMLX Calendar to explore its configuration and other details.">
 		<!-- end meta block -->
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" charset="utf-8">
@@ -24,17 +24,13 @@
 							<a href="./index.html" class="dhx_sample-header-breadcrumbs__link">Configuration</a>
 						</li>
 						<li class="dhx_sample-header-breadcrumbs__item">
-							<span class="dhx_sample-header-breadcrumbs__link">Timepicker in Calendar</span>
+							<span class="dhx_sample-header-breadcrumbs__link">Range</span>
 						</li>
 					</ul>
 				</nav>
 				<h1 class="dhx_sample-header__title">
 					<div class="dhx_sample-header__content">
-							You can add a timepicker into a calendar by enabling the timePicker property.
-						<div class="dhx_sample-docs-links">
-							Check documentation:
-							<a href="https://docs.dhtmlx.com/suite/calendar__configuring.html#timepicker" target="_blank" class="dhx_sample-header-link">Timepicker</a>
-						</div>
+							You can set date range selection.
 					</div>
 				</h1>
 			</div>
@@ -44,12 +40,14 @@
 		</section>
 
 		<script>
+			const firstDate = new Date();
+			const secondDate = new Date(Date.now() + 1000000000);
+
 			var calendar = new dhx.Calendar("calendar", {
-				timePicker: true,
-				timeFormat: 12,
-				css: "dhx_widget--bordered"
+				css: "dhx_widget--bordered",
+				range: true,
+				value: [firstDate, secondDate]
 			});
 		</script>
-
 	</body>
 </html>

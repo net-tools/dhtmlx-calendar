@@ -6,11 +6,10 @@
 		<meta name="description" content="Check interactive samples of DHTMLX Calendar to explore its customization and other details.">
 		<!-- end meta block -->
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" charset="utf-8">
-		<script type="text/javascript" src="../../codebase/calendar.js?v=6.1.7"></script>
-		<link rel="stylesheet" href="../../codebase/calendar.css?v=6.1.7">
-		<link rel="stylesheet" href="../common/index.css?v=6.1.7">
-		<link rel="stylesheet" href="../common/calendar.css?v=6.1.7">
-		
+		<script type="text/javascript" src="../../codebase/calendar.js?v=6.2.1"></script>
+		<link rel="stylesheet" href="../../codebase/calendar.css?v=6.2.1">
+		<link rel="stylesheet" href="../common/index.css?v=6.2.1">
+		<link rel="stylesheet" href="../common/calendar.css?v=6.2.1">
 		<!-- custom sample head -->
 	</head>
 	<body>
@@ -30,7 +29,7 @@
 					</ul>
 				</nav>
 				<h1 class="dhx_sample-header__title">
-						<div class="dhx_sample-header__content">
+					<div class="dhx_sample-header__content">
 							Custom styles for selected date.
 						<div class="dhx_sample-docs-links">
 							Check documentation:
@@ -65,10 +64,10 @@
 				
 				function markRange(date) {
 					return clicked === 3 && date >= lowerDate && date <= upperDate && getRangeClass(date);
-				}
+				};
 				function compareDate(d1, d2) {
 					return Math.round((d1 - d2) / (1000 * 24 * 60 * 60)) === 0
-				}
+				};
 				function getRangeClass(date) {
 					if (compareDate(upperDate, lowerDate)) {
 						return null
@@ -81,14 +80,12 @@
 						positionInrange += " dhx_calendar-day--last-date"
 					} 
 					return positionInrange
-				}
-
+				};
 				calendar.events.on("change", function(date) {
 						clicked |= 1;
 						lowerDate = date;
 						calendar2.paint();
 				});
-
 				calendar2.events.on("change", function(date) {
 						clicked |= 2;
 						upperDate = date;

@@ -6,12 +6,16 @@
 		<meta name="description" content="Check interactive samples of DHTMLX Calendar to explore its initialization and other details.">
 		<!-- end meta block -->
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" charset="utf-8">
-		<script type="text/javascript" src="../../codebase/calendar.js?v=6.1.7"></script>
-		<link rel="stylesheet" href="../../codebase/calendar.css?v=6.1.7">
-		<link rel="stylesheet" href="../common/index.css?v=6.1.7">
-		<link rel="stylesheet" href="../common/calendar.css?v=6.1.7">
-		
+		<script type="text/javascript" src="../../codebase/calendar.js?v=6.2.1"></script>
+		<link rel="stylesheet" href="../../codebase/calendar.css?v=6.2.1">
+		<link rel="stylesheet" href="../common/index.css?v=6.2.1">
+		<link rel="stylesheet" href="../common/calendar.css?v=6.2.1">
 		<!-- custom sample head -->
+		<style>
+			.dhx_sample-controls {
+				height: 60px;
+			}
+		</style>
 	</head>
 	<body>
 		<header class="dhx_sample-header">
@@ -30,8 +34,8 @@
 					</ul>
 				</nav>
 				<h1 class="dhx_sample-header__title">
-						<div class="dhx_sample-header__content">
-							Localized Calendar.
+					<div class="dhx_sample-header__content">
+						Localized Calendar.
 						<div class="dhx_sample-docs-links">
 							Check documentation:
 							<a href="https://docs.dhtmlx.com/suite/calendar__localizing_calendar.html" target="_blank" class="dhx_sample-header-link">Localization</a>
@@ -57,7 +61,6 @@
 		</section>
 
 		<script>
-			// TODO add locale
 			var locale = {
 				de: {
 					monthsShort: ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"],
@@ -77,12 +80,12 @@
 				dhx.i18n.setLocale("calendar", locale["en"]);
 				calendar.destructor();
 				calendar = new dhx.Calendar("calendar", {css: "dhx_widget--bordered"});
-			}) 
+			});
 			document.querySelector("#deutsch").addEventListener("change", function(){
 				dhx.i18n.setLocale("calendar", locale["de"]);
 				calendar.destructor();
 				calendar = new dhx.Calendar("calendar", {css: "dhx_widget--bordered"});
-			}) 
+			});
 		</script>
 
 	</body>

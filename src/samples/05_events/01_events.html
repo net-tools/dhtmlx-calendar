@@ -6,12 +6,20 @@
 		<meta name="description" content="Check interactive samples of DHTMLX Calendar to explore its events and other details.">
 		<!-- end meta block -->
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" charset="utf-8">
-		<script type="text/javascript" src="../../codebase/calendar.js?v=6.1.7"></script>
-		<link rel="stylesheet" href="../../codebase/calendar.css?v=6.1.7">
-		<link rel="stylesheet" href="../common/index.css?v=6.1.7">
-		<link rel="stylesheet" href="../common/calendar.css?v=6.1.7">
-		
+		<script type="text/javascript" src="../../codebase/calendar.js?v=6.2.1"></script>
+		<link rel="stylesheet" href="../../codebase/calendar.css?v=6.2.1">
+		<link rel="stylesheet" href="../common/index.css?v=6.2.1">
+		<link rel="stylesheet" href="../common/calendar.css?v=6.2.1">
 		<!-- custom sample head -->
+		<style>
+			.dhx_sample-container {
+				width: 800px;
+			}
+			.dhx_sample-container__sidebar {
+				width: 600px;
+				height: 500px;
+			}
+		</style>
 	</head>
 	<body>
 		<header class="dhx_sample-header">
@@ -30,7 +38,7 @@
 					</ul>
 				</nav>
 				<h1 class="dhx_sample-header__title">
-						<div class="dhx_sample-header__content">
+					<div class="dhx_sample-header__content">
 							Use the calendar to display events.
 						<div class="dhx_sample-docs-links">
 							Check documentation:
@@ -49,7 +57,6 @@
 		<script>
 			var calendar = new dhx.Calendar("calendar", {css: "dhx_widget--bordered"});
 			var info = document.getElementById("events");
-
 			var events = [
 				"change",
 				"dateHover",
@@ -64,13 +71,12 @@
 			});
 
 			function getEvent(event, args) {
-				let argsList = "<div class='arguments'>Arguments:</div>";
+				var argsList = "<div class='arguments'>Arguments:</div>";
 				for (var i = 0; i < args.length; i++) {
-					
 					argsList += "<div>" + args[i] + "</div>";
 				}
 				return "<div class=\"dhx_sample-event\">Event " + counter++ + ": " + event + argsList + "</div>";
-			}
+			};
 		</script>
 
 	</body>

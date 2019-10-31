@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.1.7 GPL
+dhtmlxCalendar v.6.2.1 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -102,7 +102,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 16);
+/******/ 	return __webpack_require__(__webpack_require__.s = 17);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -222,6 +222,27 @@ function isNumeric(val) {
     return !isNaN(val - parseFloat(val));
 }
 exports.isNumeric = isNumeric;
+function downloadFile(data, filename, mimeType) {
+    if (mimeType === void 0) { mimeType = "text/plain"; }
+    var file = new Blob([data], { type: mimeType });
+    if (window.navigator.msSaveOrOpenBlob) {
+        // IE10+
+        window.navigator.msSaveOrOpenBlob(file, filename);
+    }
+    else {
+        var a_1 = document.createElement("a");
+        var url_1 = URL.createObjectURL(file);
+        a_1.href = url_1;
+        a_1.download = filename;
+        document.body.appendChild(a_1);
+        a_1.click();
+        setTimeout(function () {
+            document.body.removeChild(a_1);
+            window.URL.revokeObjectURL(url_1);
+        }, 0);
+    }
+}
+exports.downloadFile = downloadFile;
 
 
 /***/ }),
@@ -229,14 +250,15 @@ exports.isNumeric = isNumeric;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
+/* WEBPACK VAR INJECTION */(function(Promise) {
 Object.defineProperty(exports, "__esModule", { value: true });
-var dom = __webpack_require__(28);
+var dom = __webpack_require__(29);
 exports.el = dom.defineElement;
 exports.sv = dom.defineSvgElement;
 exports.view = dom.defineView;
 exports.create = dom.createView;
 exports.inject = dom.injectView;
+exports.KEYED_LIST = dom.KEYED_LIST;
 function disableHelp() {
     dom.DEVMODE.mutations = false;
     dom.DEVMODE.warnings = false;
@@ -270,7 +292,16 @@ function resizer(handler) {
     });
 }
 exports.resizer = resizer;
+function awaitRedraw() {
+    return new Promise(function (res) {
+        requestAnimationFrame(function () {
+            res();
+        });
+    });
+}
+exports.awaitRedraw = awaitRedraw;
 
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7)))
 
 /***/ }),
 /* 2 */
@@ -290,7 +321,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-__webpack_require__(20);
+__webpack_require__(21);
 function toNode(node) {
     if (typeof node === "string") {
         node = (document.getElementById(node) || document.querySelector(node));
@@ -536,6 +567,64 @@ function placeRightOrLeft(pos, config) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var EventSystem = /** @class */ (function () {
+    function EventSystem(context) {
+        this.events = {};
+        this.context = context || this;
+    }
+    EventSystem.prototype.on = function (name, callback, context) {
+        var event = name.toLowerCase();
+        this.events[event] = this.events[event] || [];
+        this.events[event].push({ callback: callback, context: context || this.context });
+    };
+    EventSystem.prototype.detach = function (name, context) {
+        var event = name.toLowerCase();
+        var eStack = this.events[event];
+        if (context && eStack && eStack.length) {
+            for (var i = eStack.length - 1; i >= 0; i--) {
+                if (eStack[i].context === context) {
+                    eStack.splice(i, 1);
+                }
+            }
+        }
+        else {
+            this.events[event] = [];
+        }
+    };
+    EventSystem.prototype.fire = function (name, args) {
+        if (typeof args === "undefined") {
+            args = [];
+        }
+        var event = name.toLowerCase();
+        if (this.events[event]) {
+            var res = this.events[event].map(function (e) { return e.callback.apply(e.context, args); });
+            return res.indexOf(false) < 0;
+        }
+        return true;
+    };
+    EventSystem.prototype.clear = function () {
+        this.events = {};
+    };
+    return EventSystem;
+}());
+exports.EventSystem = EventSystem;
+function EventsMixin(obj) {
+    obj = obj || {};
+    var eventSystem = new EventSystem(obj);
+    obj.detachEvent = eventSystem.detach.bind(eventSystem);
+    obj.attachEvent = eventSystem.on.bind(eventSystem);
+    obj.callEvent = eventSystem.fire.bind(eventSystem);
+}
+exports.EventsMixin = EventsMixin;
+
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
 var html_1 = __webpack_require__(2);
 var View = /** @class */ (function () {
@@ -593,65 +682,42 @@ exports.toViewLike = toViewLike;
 
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var EventSystem = /** @class */ (function () {
-    function EventSystem(context) {
-        this.events = {};
-        this.context = context || this;
-    }
-    EventSystem.prototype.on = function (name, callback, context) {
-        var event = name.toLowerCase();
-        this.events[event] = this.events[event] || [];
-        this.events[event].push({ callback: callback, context: context || this.context });
-    };
-    EventSystem.prototype.detach = function (name, context) {
-        var event = name.toLowerCase();
-        var eStack = this.events[event];
-        if (context && eStack && eStack.length) {
-            for (var i = eStack.length - 1; i >= 0; i--) {
-                if (eStack[i].context === context) {
-                    eStack.splice(i, 1);
-                }
-            }
-        }
-        else {
-            this.events[event] = [];
-        }
-    };
-    EventSystem.prototype.fire = function (name, args) {
-        if (typeof args === "undefined") {
-            args = [];
-        }
-        var event = name.toLowerCase();
-        if (this.events[event]) {
-            var res = this.events[event].map(function (e) { return e.callback.apply(e.context, args); });
-            return res.indexOf(false) < 0;
-        }
-        return true;
-    };
-    EventSystem.prototype.clear = function () {
-        this.events = {};
-    };
-    return EventSystem;
-}());
-exports.EventSystem = EventSystem;
-function EventsMixin(obj) {
-    obj = obj || {};
-    var eventSystem = new EventSystem(obj);
-    obj.detachEvent = eventSystem.detach.bind(eventSystem);
-    obj.attachEvent = eventSystem.on.bind(eventSystem);
-    obj.callEvent = eventSystem.fire.bind(eventSystem);
-}
-exports.EventsMixin = EventsMixin;
+var LayoutEvents;
+(function (LayoutEvents) {
+    LayoutEvents["beforeShow"] = "beforeShow";
+    LayoutEvents["afterShow"] = "afterShow";
+    LayoutEvents["beforeHide"] = "beforeHide";
+    LayoutEvents["afterHide"] = "afterHide";
+    LayoutEvents["beforeResizeStart"] = "beforeResizeStart";
+    LayoutEvents["resize"] = "resize";
+    LayoutEvents["afterResizeEnd"] = "afterResizeEnd";
+    LayoutEvents["beforeAdd"] = "beforeAdd";
+    LayoutEvents["afterAdd"] = "afterAdd";
+    LayoutEvents["beforeRemove"] = "beforeRemove";
+    LayoutEvents["afterRemove"] = "afterRemove";
+    LayoutEvents["beforeCollapse"] = "beforeCollapse";
+    LayoutEvents["afterCollapse"] = "afterCollapse";
+})(LayoutEvents = exports.LayoutEvents || (exports.LayoutEvents = {}));
+var resizeMode;
+(function (resizeMode) {
+    resizeMode[resizeMode["unknown"] = 0] = "unknown";
+    resizeMode[resizeMode["percents"] = 1] = "percents";
+    resizeMode[resizeMode["pixels"] = 2] = "pixels";
+    resizeMode[resizeMode["mixedpx1"] = 3] = "mixedpx1";
+    resizeMode[resizeMode["mixedpx2"] = 4] = "mixedpx2";
+    resizeMode[resizeMode["mixedperc1"] = 5] = "mixedperc1";
+    resizeMode[resizeMode["mixedperc2"] = 6] = "mixedperc2";
+})(resizeMode = exports.resizeMode || (exports.resizeMode = {}));
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -681,50 +747,7 @@ var MessageContainerPosition;
 
 
 /***/ }),
-/* 6 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || new Function("return this")();
-} catch (e) {
-	// This works if the window reference is available
-	if (typeof window === "object") g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
 /* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var locale = {
-    monthsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-    daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-    days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Monday"],
-    cancel: "Cancel"
-};
-exports.default = locale;
-
-
-/***/ }),
-/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, setImmediate) {(function () {
@@ -1044,10 +1067,53 @@ exports.default = locale;
   } else {}
 })()
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6), __webpack_require__(22).setImmediate))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(8), __webpack_require__(23).setImmediate))
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || new Function("return this")();
+} catch (e) {
+	// This works if the window reference is available
+	if (typeof window === "object") g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
 
 /***/ }),
 /* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var locale = {
+    monthsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Monday"],
+    cancel: "Cancel"
+};
+exports.default = locale;
+
+
+/***/ }),
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1061,7 +1127,7 @@ exports.default = locale;
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1087,7 +1153,7 @@ exports.blockScreen = blockScreen;
 
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1096,12 +1162,12 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(27));
-__export(__webpack_require__(12));
+__export(__webpack_require__(28));
+__export(__webpack_require__(13));
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1118,7 +1184,7 @@ var PopupEvents;
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1138,7 +1204,7 @@ var SliderEvents;
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1153,13 +1219,13 @@ var TimepickerEvents;
 
 
 /***/ }),
-/* 15 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var en_1 = __webpack_require__(7);
+var en_1 = __webpack_require__(9);
 var core_1 = __webpack_require__(0);
 /*
     %d	day as a number with leading zero, 01..31
@@ -1206,9 +1272,18 @@ var formatters = {
     "%Y": function (date) { return date.getFullYear(); },
     "%h": function (date) {
         var hours = date.getHours() % 12;
+        if (hours === 0) {
+            hours = 12;
+        }
         return hours < 10 ? "0" + hours : hours;
     },
-    "%g": function (date) { return date.getHours() % 12; },
+    "%g": function (date) {
+        var hours = date.getHours() % 12;
+        if (hours === 0) {
+            hours = 12;
+        }
+        return hours;
+    },
     "%H": function (date) {
         var hours = date.getHours();
         return hours < 10 ? "0" + hours : hours;
@@ -1222,8 +1297,12 @@ var formatters = {
         var seconds = date.getSeconds();
         return seconds < 10 ? "0" + seconds : seconds;
     },
-    "%a": function (date) { return date.getHours() > 12 ? "pm" : "am"; },
-    "%A": function (date) { return date.getHours() > 12 ? "PM" : "AM"; },
+    "%a": function (date) {
+        return date.getHours() >= 12 ? "pm" : "am";
+    },
+    "%A": function (date) {
+        return date.getHours() >= 12 ? "PM" : "AM";
+    },
     "%u": function (date) { return date.getMilliseconds(); }
 };
 var setFormatters = {
@@ -1275,15 +1354,15 @@ var setFormatters = {
             ? date.setFullYear(Number(value))
             : date.setFullYear(Number("2000"));
     },
-    "%h": function (date, value) {
+    "%h": function (date, value, dateFormat) {
         var check = /(^0[1-9]|1[0-2]$)/i.test(value);
-        check
+        check && dateFormat === "pm" || dateFormat === "PM"
             ? date.setHours(Number(value))
             : date.setHours(Number(0));
     },
-    "%g": function (date, value) {
+    "%g": function (date, value, dateFormat) {
         var check = /(^[1-9]$)|(^0[1-9]|1[0-2]$)/i.test(value);
-        check
+        check && dateFormat === "pm" || dateFormat === "PM"
             ? date.setHours(Number(value))
             : date.setHours(Number(0));
     },
@@ -1405,12 +1484,19 @@ function stringToDate(str, format, validate) {
             value: str.slice(index)
         });
     }
-    var date = new Date();
     dateParts.reverse();
+    var dateFormat;
     for (var _a = 0, dateParts_1 = dateParts; _a < dateParts_1.length; _a++) {
         var datePart = dateParts_1[_a];
+        if (datePart.formatter === "%A" || datePart.formatter === "%a") {
+            dateFormat = datePart.value;
+        }
+    }
+    var date = new Date();
+    for (var _b = 0, dateParts_2 = dateParts; _b < dateParts_2.length; _b++) {
+        var datePart = dateParts_2[_b];
         if (setFormatters[datePart.formatter]) {
-            setFormatters[datePart.formatter](date, datePart.value);
+            setFormatters[datePart.formatter](date, datePart.value, dateFormat);
         }
     }
     return validate ? true : date;
@@ -1419,20 +1505,20 @@ exports.stringToDate = stringToDate;
 
 
 /***/ }),
-/* 16 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-__webpack_require__(17);
-var ts_message_1 = __webpack_require__(18);
+__webpack_require__(18);
+var ts_message_1 = __webpack_require__(19);
 exports.tooltip = ts_message_1.tooltip;
-var ts_popup_1 = __webpack_require__(11);
+var ts_popup_1 = __webpack_require__(12);
 exports.Popup = ts_popup_1.Popup;
-var Calendar_1 = __webpack_require__(29);
+var Calendar_1 = __webpack_require__(30);
 exports.Calendar = Calendar_1.Calendar;
-var en_1 = __webpack_require__(7);
+var en_1 = __webpack_require__(9);
 var w = window;
 exports.i18n = (w.dhx && w.dhx.i18n) ? w.dhx.i18 : {};
 exports.i18n.setLocale = function (component, value) {
@@ -1445,13 +1531,13 @@ exports.i18n.calendar = exports.i18n.calendar || en_1.default;
 
 
 /***/ }),
-/* 17 */
+/* 18 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // extracted by mini-css-extract-plugin
 
 /***/ }),
-/* 18 */
+/* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1460,22 +1546,22 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(19));
-__export(__webpack_require__(21));
-__export(__webpack_require__(25));
+__export(__webpack_require__(20));
+__export(__webpack_require__(22));
 __export(__webpack_require__(26));
-__export(__webpack_require__(5));
+__export(__webpack_require__(27));
+__export(__webpack_require__(6));
 
 
 /***/ }),
-/* 19 */
+/* 20 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var html_1 = __webpack_require__(2);
-var types_1 = __webpack_require__(5);
+var types_1 = __webpack_require__(6);
 var nodeTimeout = new WeakMap();
 var containers = new Map();
 function onExpire(node, fromClick) {
@@ -1562,7 +1648,7 @@ function createMessageContainer(parent, position) {
 
 
 /***/ }),
-/* 20 */
+/* 21 */
 /***/ (function(module, exports) {
 
 if (Element && !Element.prototype.matches) {
@@ -1574,14 +1660,14 @@ if (Element && !Element.prototype.matches) {
 
 
 /***/ }),
-/* 21 */
+/* 22 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(Promise) {
 Object.defineProperty(exports, "__esModule", { value: true });
-var en_1 = __webpack_require__(9);
-var common_1 = __webpack_require__(10);
+var en_1 = __webpack_require__(10);
+var common_1 = __webpack_require__(11);
 function alert(props) {
     var apply = props.buttons && props.buttons[0] ? props.buttons[0] : en_1.default.apply;
     var unblock = common_1.blockScreen(props.blockerCss);
@@ -1600,10 +1686,10 @@ function alert(props) {
 }
 exports.alert = alert;
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(8)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7)))
 
 /***/ }),
-/* 22 */
+/* 23 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {var scope = (typeof global !== "undefined" && global) ||
@@ -1659,7 +1745,7 @@ exports._unrefActive = exports.active = function(item) {
 };
 
 // setimmediate attaches itself to the global object
-__webpack_require__(23);
+__webpack_require__(24);
 // On some exotic environments, it's not clear which object `setimmediate` was
 // able to install onto.  Search each possibility in the same order as the
 // `setimmediate` library.
@@ -1670,10 +1756,10 @@ exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
                          (typeof global !== "undefined" && global.clearImmediate) ||
                          (this && this.clearImmediate);
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(8)))
 
 /***/ }),
-/* 23 */
+/* 24 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
@@ -1863,10 +1949,10 @@ exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
     attachTo.clearImmediate = clearImmediate;
 }(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(6), __webpack_require__(24)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(8), __webpack_require__(25)))
 
 /***/ }),
-/* 24 */
+/* 25 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -2056,14 +2142,14 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 25 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 /* WEBPACK VAR INJECTION */(function(Promise) {
 Object.defineProperty(exports, "__esModule", { value: true });
-var en_1 = __webpack_require__(9);
-var common_1 = __webpack_require__(10);
+var en_1 = __webpack_require__(10);
+var common_1 = __webpack_require__(11);
 function confirm(props) {
     var apply = props.buttons && props.buttons[0] ? props.buttons[0] : en_1.default.apply;
     var reject = props.buttons && props.buttons[1] ? props.buttons[1] : en_1.default.reject;
@@ -2090,10 +2176,10 @@ function confirm(props) {
 }
 exports.confirm = confirm;
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(8)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7)))
 
 /***/ }),
-/* 26 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2111,7 +2197,7 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var html_1 = __webpack_require__(2);
-var types_1 = __webpack_require__(5);
+var types_1 = __webpack_require__(6);
 var DEFAULT_SHOW_DELAY = 750;
 var DEFAULT_HIDE_DELAY = 200;
 function findPosition(targetRect, position, width, height) {
@@ -2282,7 +2368,7 @@ function _mousemove(e) {
 
 
 /***/ }),
-/* 27 */
+/* 28 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2314,10 +2400,10 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
 var dom_1 = __webpack_require__(1);
-var events_1 = __webpack_require__(4);
+var events_1 = __webpack_require__(3);
 var html_1 = __webpack_require__(2);
-var view_1 = __webpack_require__(3);
-var types_1 = __webpack_require__(12);
+var view_1 = __webpack_require__(4);
+var types_1 = __webpack_require__(13);
 var Popup = /** @class */ (function (_super) {
     __extends(Popup, _super);
     function Popup(config) {
@@ -2504,7 +2590,7 @@ exports.Popup = Popup;
 
 
 /***/ }),
-/* 28 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
@@ -4445,7 +4531,7 @@ return nano;
 
 
 /***/ }),
-/* 29 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4477,14 +4563,14 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
 var dom_1 = __webpack_require__(1);
-var events_1 = __webpack_require__(4);
-var view_1 = __webpack_require__(3);
-var ts_timepicker_1 = __webpack_require__(30);
-var DateHelper_1 = __webpack_require__(40);
-var DateFormatter_1 = __webpack_require__(15);
-var helper_1 = __webpack_require__(41);
-var en_1 = __webpack_require__(7);
-var types_1 = __webpack_require__(42);
+var events_1 = __webpack_require__(3);
+var view_1 = __webpack_require__(4);
+var ts_timepicker_1 = __webpack_require__(31);
+var DateHelper_1 = __webpack_require__(42);
+var DateFormatter_1 = __webpack_require__(16);
+var helper_1 = __webpack_require__(43);
+var en_1 = __webpack_require__(9);
+var types_1 = __webpack_require__(44);
 var Calendar = /** @class */ (function (_super) {
     __extends(Calendar, _super);
     function Calendar(container, config) {
@@ -4496,6 +4582,7 @@ var Calendar = /** @class */ (function (_super) {
             width: "250px"
         }, config)) || this;
         _this.events = new events_1.EventSystem();
+        _this._selected = [];
         if (!_this.config.dateFormat) {
             if (_this.config.timePicker) {
                 if (_this.config.timeFormat === 12) {
@@ -4510,13 +4597,13 @@ var Calendar = /** @class */ (function (_super) {
             }
         }
         if (_this.config.value) {
-            _this._selected = DateHelper_1.DateHelper.toDateObject(_this.config.value, _this.config.dateFormat);
+            _this._setSelected(_this.config.value);
         }
         if (_this.config.date) {
             _this._currentDate = DateHelper_1.DateHelper.toDateObject(_this.config.date, _this.config.dateFormat);
         }
-        else if (_this._selected) {
-            _this._currentDate = new Date(_this._selected);
+        else if (_this._getSelected()) {
+            _this._currentDate = DateHelper_1.DateHelper.copy(_this._getSelected());
         }
         else {
             _this._currentDate = new Date();
@@ -4534,7 +4621,7 @@ var Calendar = /** @class */ (function (_super) {
         _this._initHandlers();
         if (_this.config.timePicker) {
             _this._timepicker = new ts_timepicker_1.Timepicker(null, { timeFormat: _this.config.timeFormat, actions: true });
-            var initTime = _this._selected || new Date();
+            var initTime = _this._getSelected() || new Date();
             _this._timepicker.setValue(initTime);
             _this._time = _this._timepicker.getValue();
             _this._timepicker.events.on(ts_timepicker_1.TimepickerEvents.close, function () {
@@ -4543,10 +4630,10 @@ var Calendar = /** @class */ (function (_super) {
             });
             _this._timepicker.events.on(ts_timepicker_1.TimepickerEvents.save, function () {
                 var _a = _this._timepicker.getValue(true), hour = _a.hour, minute = _a.minute, AM = _a.AM;
-                var oldDate = _this._selected;
-                var newDate = _this._selected = DateHelper_1.DateHelper.withHoursAndMinutes(_this._selected || new Date(), AM === false ? hour + 12 : hour, minute);
+                var oldDate = _this._getSelected();
+                var newDate = DateHelper_1.DateHelper.withHoursAndMinutes(_this._getSelected() || new Date(), hour, minute, AM);
                 if (_this.events.fire(types_1.CalendarEvents.beforeChange, [newDate, oldDate, true])) {
-                    _this._selected = newDate;
+                    _this._selected[_this._selected.length - 1] = newDate;
                     _this.events.fire(types_1.CalendarEvents.change, [newDate, oldDate, true]);
                 }
                 _this._time = _this._timepicker.getValue();
@@ -4557,36 +4644,44 @@ var Calendar = /** @class */ (function (_super) {
         _this.mount(container, dom_1.create({ render: render }));
         return _this;
     }
-    Calendar.prototype.setValue = function (date) {
-        date = DateHelper_1.DateHelper.toDateObject(date, this.config.dateFormat);
-        var oldDate = DateHelper_1.DateHelper.copy(this._selected);
+    Calendar.prototype.setValue = function (value) {
+        if (!value || value instanceof Array && value.length === 0) {
+            return false;
+        }
+        this._selected = [];
+        var currentDate = value instanceof Array ? value[0] : value;
+        var date = DateHelper_1.DateHelper.toDateObject(currentDate, this.config.dateFormat);
+        var oldDate = DateHelper_1.DateHelper.copy(this._getSelected());
         if (!this.events.fire(types_1.CalendarEvents.beforeChange, [date, oldDate, false])) {
             return false;
         }
-        this._selected = date;
-        this._currentDate = DateHelper_1.DateHelper.copy(this._selected);
+        this._setSelected(value);
         if (this._timepicker) {
             this._timepicker.setValue(date);
             this._time = this._timepicker.getValue();
         }
+        this.showDate(this._getSelected());
         this.events.fire(types_1.CalendarEvents.change, [date, oldDate, false]);
         this.paint();
         return true;
     };
     Calendar.prototype.getValue = function (asDateObject) {
-        if (!this._selected) {
+        var _this = this;
+        if (!this._selected[0]) {
             return null;
         }
-        if (asDateObject) {
-            return DateHelper_1.DateHelper.copy(this._selected);
+        if (this.config.range) {
+            return asDateObject
+                ? this._selected.map(function (date) { return DateHelper_1.DateHelper.copy(date); })
+                : this._selected.map(function (date) { return DateFormatter_1.getFormatedDate(_this.config.dateFormat, date); });
         }
-        else {
-            return DateFormatter_1.getFormatedDate(this.config.dateFormat, this._selected);
-        }
+        return asDateObject
+            ? DateHelper_1.DateHelper.copy(this._selected[0])
+            : DateFormatter_1.getFormatedDate(this.config.dateFormat, this._selected[0]);
     };
     Calendar.prototype.showDate = function (date, mode) {
         if (date) {
-            this._currentDate = date;
+            this._currentDate = DateHelper_1.DateHelper.copy(date);
         }
         if (mode) {
             this._currentViewMode = mode;
@@ -4608,9 +4703,9 @@ var Calendar = /** @class */ (function (_super) {
             this._unlink();
         }
         this._linkedCalendar = targetCalendar;
-        var rawLowerData = this.getValue(true);
+        var rawLowerDate = this.getValue(true);
         var rawUpperDate = targetCalendar.getValue(true);
-        var lowerDate = rawLowerData && DateHelper_1.DateHelper.dayStart(rawLowerData);
+        var lowerDate = rawLowerDate && DateHelper_1.DateHelper.dayStart(rawLowerDate);
         var upperDate = rawUpperDate && DateHelper_1.DateHelper.dayStart(rawUpperDate);
         var rangeMark = function (date) {
             if (lowerDate && upperDate) {
@@ -4630,6 +4725,9 @@ var Calendar = /** @class */ (function (_super) {
             }
             return positionInRange;
         };
+        if (!this.config.$rangeMark || !this._linkedCalendar.config.$rangeMark) {
+            this.config.$rangeMark = this._linkedCalendar.config.$rangeMark = rangeMark;
+        }
         if (!this.config.block || !this._linkedCalendar.config.block) {
             this.config.block = function (date) {
                 if (upperDate) {
@@ -4644,9 +4742,6 @@ var Calendar = /** @class */ (function (_super) {
         }
         this.config.thisMonthOnly = true;
         targetCalendar.config.thisMonthOnly = true;
-        if (!this.config.$rangeMark || !this._linkedCalendar.config.$rangeMark) {
-            this.config.$rangeMark = this._linkedCalendar.config.$rangeMark = rangeMark;
-        }
         this.events.on(types_1.CalendarEvents.change, function (date) {
             lowerDate = DateHelper_1.DateHelper.dayStart(date);
             _this._linkedCalendar.paint();
@@ -4669,6 +4764,31 @@ var Calendar = /** @class */ (function (_super) {
             this._linkedCalendar = null;
         }
     };
+    Calendar.prototype._setSelected = function (value) {
+        var _this = this;
+        var currentDate = value instanceof Array ? value[0] : value;
+        var date = DateHelper_1.DateHelper.toDateObject(currentDate, this.config.dateFormat);
+        if (value instanceof Array && this.config.range) {
+            var filterDate_1 = [];
+            value.forEach(function (element, index) {
+                if (index < 2) {
+                    filterDate_1.push(DateHelper_1.DateHelper.toDateObject(element, _this.config.dateFormat));
+                }
+            });
+            if (filterDate_1.length === 2 && filterDate_1[0] < filterDate_1[1]) {
+                filterDate_1.forEach(function (element) { return _this._selected.push(element); });
+            }
+            else {
+                this._selected[0] = filterDate_1[0];
+            }
+        }
+        else {
+            this._selected[0] = date;
+        }
+    };
+    Calendar.prototype._getSelected = function () {
+        return this._selected[this._selected.length - 1];
+    };
     Calendar.prototype._draw = function () {
         switch (this._currentViewMode) {
             case types_1.ViewMode.days:
@@ -4687,15 +4807,23 @@ var Calendar = /** @class */ (function (_super) {
             onclick: {
                 ".dhx_calendar-year, .dhx_calendar-month, .dhx_calendar-day": function (_e, vn) {
                     var date = vn.attrs._date;
-                    var oldDate = DateHelper_1.DateHelper.copy(_this._selected);
+                    var oldDate = DateHelper_1.DateHelper.copy(_this._getSelected());
                     switch (_this._currentViewMode) {
                         case types_1.ViewMode.days:
-                            var mergedDate = _this.config.timePicker ? DateHelper_1.DateHelper.mergeHoursAndMinutes(date, _this._selected || _this._currentDate) : date;
+                            var mergedDate = _this.config.timePicker
+                                ? DateHelper_1.DateHelper.mergeHoursAndMinutes(date, _this._getSelected() || _this._currentDate)
+                                : date;
                             if (!_this.events.fire(types_1.CalendarEvents.beforeChange, [mergedDate, oldDate, true])) {
                                 return;
                             }
-                            _this._selected = mergedDate;
-                            _this.showDate(date);
+                            if (_this.config.range && _this._selected.length === 1 && _this._selected[0] < mergedDate) {
+                                _this._selected.push(mergedDate);
+                            }
+                            else {
+                                _this._selected = [];
+                                _this._selected[0] = mergedDate;
+                            }
+                            _this.showDate(_this._getSelected());
                             _this.events.fire(types_1.CalendarEvents.change, [date, oldDate, true]);
                             break;
                         case types_1.ViewMode.months:
@@ -4704,13 +4832,13 @@ var Calendar = /** @class */ (function (_super) {
                                 _this.showDate(null, types_1.ViewMode.days);
                             }
                             else {
-                                var newDate = DateHelper_1.DateHelper.fromYearAndMonth(_this._currentDate.getFullYear() || _this._selected.getFullYear(), date);
+                                var newDate = DateHelper_1.DateHelper.fromYearAndMonth(_this._currentDate.getFullYear() || _this._getSelected().getFullYear(), date);
                                 if (!_this.events.fire(types_1.CalendarEvents.beforeChange, [newDate, oldDate, true])) {
                                     return;
                                 }
                                 _this._currentDate = newDate;
-                                _this._selected = newDate;
-                                _this.events.fire(types_1.CalendarEvents.change, [_this._selected, oldDate, true]);
+                                _this._selected[0] = newDate;
+                                _this.events.fire(types_1.CalendarEvents.change, [_this._getSelected(), oldDate, true]);
                                 _this.paint();
                             }
                             break;
@@ -4725,13 +4853,13 @@ var Calendar = /** @class */ (function (_super) {
                                     return;
                                 }
                                 _this._currentDate = newDate;
-                                _this._selected = newDate;
-                                _this.events.fire(types_1.CalendarEvents.change, [_this._selected, oldDate, true]);
+                                _this._selected[0] = newDate;
+                                _this.events.fire(types_1.CalendarEvents.change, [_this._getSelected(), oldDate, true]);
                                 _this.paint();
                             }
                     }
                 },
-                ".dhx_calendar-action__cancel": function () { return _this.showDate(_this._selected, types_1.ViewMode.days); },
+                ".dhx_calendar-action__cancel": function () { return _this.showDate(_this._getSelected(), types_1.ViewMode.days); },
                 ".dhx_calendar-action__show-month": function () { return _this.showDate(null, types_1.ViewMode.months); },
                 ".dhx_calendar-action__show-year": function () { return _this.showDate(null, types_1.ViewMode.years); },
                 ".dhx_calendar-action__next": function () {
@@ -4768,13 +4896,14 @@ var Calendar = /** @class */ (function (_super) {
                 }
             },
             onmouseover: {
-                ".dhx_calendar-day": function (e, vn) { return _this.events.fire(types_1.CalendarEvents.dateHover, [e, new Date(vn.attrs._date)]); }
+                ".dhx_calendar-day": function (e, vn) { return _this.events.fire(types_1.CalendarEvents.dateHover, [new Date(vn.attrs._date), e]); }
             }
         };
     };
-    Calendar.prototype._getData = function (d) {
+    Calendar.prototype._getData = function (date) {
+        var _this = this;
         var firstDay = this.config.weekStart === "monday" ? 1 : 0;
-        var first = DateHelper_1.DateHelper.weekStart(DateHelper_1.DateHelper.monthStart(d), firstDay);
+        var first = DateHelper_1.DateHelper.weekStart(DateHelper_1.DateHelper.monthStart(date), firstDay);
         var data = [];
         var weeksCount = 6;
         var currentDate = first;
@@ -4783,16 +4912,32 @@ var Calendar = /** @class */ (function (_super) {
             var disabledDays = 0;
             var daysCount = 7;
             var days = [];
-            while (daysCount--) {
+            var _loop_1 = function () {
                 var isDateWeekEnd = DateHelper_1.DateHelper.isWeekEnd(currentDate);
-                var isCurrentMonth = d.getMonth() === currentDate.getMonth();
-                var isBlocked = this.config.block && this.config.block(currentDate);
+                var isCurrentMonth = date.getMonth() === currentDate.getMonth();
+                var isBlocked = this_1.config.block && this_1.config.block(currentDate);
                 var css = [];
+                if (this_1.config.range && this_1._selected[0] && this_1._selected[1]) {
+                    var rangeMark = function () {
+                        if (_this._selected[0] && _this._selected[1]) {
+                            var firstDate = DateHelper_1.DateHelper.dayStart(_this._selected[0]);
+                            var lastDate = DateHelper_1.DateHelper.dayStart(_this._selected[1]);
+                            return currentDate >= firstDate && currentDate <= lastDate && getRangeClass_1();
+                        }
+                    };
+                    var getRangeClass_1 = function () {
+                        if (DateHelper_1.DateHelper.isSameDay(_this._selected[0], _this._selected[1])) {
+                            return null;
+                        }
+                        return "dhx_calendar-day--in-range";
+                    };
+                    this_1.config.$rangeMark = rangeMark;
+                }
                 if (isDateWeekEnd && isCurrentMonth) {
                     css.push("dhx_calendar-day--weekend");
                 }
                 if (!isCurrentMonth) {
-                    if (this.config.thisMonthOnly) {
+                    if (this_1.config.thisMonthOnly) {
                         disabledDays++;
                         css.push("dhx_calendar-day--hidden");
                     }
@@ -4800,14 +4945,14 @@ var Calendar = /** @class */ (function (_super) {
                         css.push("dhx_calendar-day--muffled");
                     }
                 }
-                if (this.config.mark) {
-                    var markedCss = this.config.mark(currentDate);
+                if (this_1.config.mark) {
+                    var markedCss = this_1.config.mark(currentDate);
                     if (markedCss) {
                         css.push(markedCss);
                     }
                 }
-                if (this.config.$rangeMark) {
-                    var rangeMark = this.config.$rangeMark(currentDate);
+                if (this_1.config.$rangeMark) {
+                    var rangeMark = this_1.config.$rangeMark(currentDate);
                     if (rangeMark) {
                         css.push(rangeMark);
                     }
@@ -4820,17 +4965,25 @@ var Calendar = /** @class */ (function (_super) {
                         css.push("dhx_calendar-day--disabled");
                     }
                 }
-                if (this._selected && currentDate.getDate() === this._selected.getDate()
-                    && currentDate.getMonth() === this._selected.getMonth()
-                    && this._selected.getFullYear() === currentDate.getFullYear()) {
-                    css.push("dhx_calendar-day--selected");
-                }
+                this_1._selected.forEach(function (selected, index) {
+                    if (selected && DateHelper_1.DateHelper.isSameDay(selected, currentDate)) {
+                        var dayCss = "dhx_calendar-day--selected";
+                        if (_this.config.range) {
+                            dayCss += " dhx_calendar-day--selected-" + (index === 0 ? "first " : "last");
+                        }
+                        css.push(dayCss);
+                    }
+                });
                 days.push({
                     date: currentDate,
                     day: currentDate.getDate(),
                     css: css.join(" ")
                 });
                 currentDate = DateHelper_1.DateHelper.addDay(currentDate);
+            };
+            var this_1 = this;
+            while (daysCount--) {
+                _loop_1();
             }
             data.push({
                 weekNumber: currentWeek,
@@ -4842,7 +4995,8 @@ var Calendar = /** @class */ (function (_super) {
     };
     Calendar.prototype._drawCalendar = function () {
         var date = this._currentDate;
-        var weekDays = this.config.weekStart === "monday"
+        var _a = this.config, weekStart = _a.weekStart, thisMonthOnly = _a.thisMonthOnly, css = _a.css, timePicker = _a.timePicker, width = _a.width;
+        var weekDays = weekStart === "monday"
             ? en_1.default.daysShort.slice(1).concat([en_1.default.daysShort[0]]) : en_1.default.daysShort;
         var weekDaysHeader = weekDays.map(function (day) { return dom_1.el(".dhx_calendar-weekday", day); });
         var data = this._getData(date);
@@ -4856,7 +5010,7 @@ var Calendar = /** @class */ (function (_super) {
                 _date: item.date,
                 tabIndex: 1,
             }, item.day); });
-            if (this.config.weekNumbers && !(week.disabledWeekNumber && this.config.thisMonthOnly)) {
+            if (this.config.weekNumbers && !(week.disabledWeekNumber && thisMonthOnly)) {
                 weekNumbers.push(dom_1.el("div", {
                     class: "dhx_calendar-week-number"
                 }, week.weekNumber));
@@ -4867,10 +5021,10 @@ var Calendar = /** @class */ (function (_super) {
             weekNumbersWrapper = dom_1.el(".dhx_calendar__week-numbers", weekNumbers);
         }
         var widgetClass = "dhx_calendar dhx_widget" +
-            (this.config.css ? " " + this.config.css : "") +
-            (this.config.timePicker ? " dhx_calendar--with_timepicker" : "") +
+            (css ? " " + css : "") +
+            (timePicker ? " dhx_calendar--with_timepicker" : "") +
             (this.config.weekNumbers ? " dhx_calendar--with_week-numbers" : "");
-        return dom_1.el("div", __assign({ class: widgetClass, style: { width: this.config.weekNumbers ? "calc(" + this.config.width + " + 48px )" : this.config.width } }, this._handlers), [
+        return dom_1.el("div", __assign({ class: widgetClass, style: { width: this.config.weekNumbers ? "calc(" + width + " + 48px )" : width } }, this._handlers), [
             dom_1.el(".dhx_calendar__wrapper", [
                 this._drawHeader(dom_1.el("button.dhx_calendar-action__show-month.dhx_button.dhx_button--view_link.dhx_button--size_small.dhx_button--color_secondary.dhx_button--circle", en_1.default.months[date.getMonth()] + " " + date.getFullYear())),
                 this.config.weekNumbers && dom_1.el(".dhx_calendar__dates-wrapper", [
@@ -4880,7 +5034,7 @@ var Calendar = /** @class */ (function (_super) {
                 ]),
                 !this.config.weekNumbers && dom_1.el(".dhx_calendar__weekdays", weekDaysHeader),
                 !this.config.weekNumbers && dom_1.el(".dhx_calendar__days", content),
-                this.config.timePicker ?
+                timePicker ?
                     dom_1.el(".dhx_timepicker__actions", [
                         dom_1.el("button.dhx_calendar__timepicker-button." +
                             "dhx_button.dhx_button--view_link.dhx_button--size_small.dhx_button--color_secondary.dhx_button--width_full.dhx_button--circle.dhx_calendar-action__show-timepicker", [
@@ -4894,13 +5048,14 @@ var Calendar = /** @class */ (function (_super) {
     Calendar.prototype._drawMonthSelector = function () {
         var date = this._currentDate;
         var currentMonth = date.getMonth();
-        var currentYear = this._selected ? this._selected.getFullYear() : null;
+        var currentYear = this._getSelected() ? this._getSelected().getFullYear() : null;
+        var _a = this.config, css = _a.css, timePicker = _a.timePicker, weekNumbers = _a.weekNumbers, width = _a.width, view = _a.view;
         var widgetClass = "dhx_calendar dhx_widget" +
-            (this.config.css ? " " + this.config.css : "") +
-            (this.config.timePicker ? " dhx_calendar--with_timepicker" : "") +
-            (this.config.weekNumbers ? " dhx_calendar--with_week-numbers" : "");
+            (css ? " " + css : "") +
+            (timePicker ? " dhx_calendar--with_timepicker" : "") +
+            (weekNumbers ? " dhx_calendar--with_week-numbers" : "");
         return dom_1.el("div", __assign({ class: widgetClass, style: {
-                width: this.config.weekNumbers ? "calc(" + this.config.width + " + 48px)" : this.config.width,
+                width: weekNumbers ? "calc(" + width + " + 48px)" : width,
             } }, this._handlers), [
             dom_1.el(".dhx_calendar__wrapper", [
                 this._drawHeader(dom_1.el("button.dhx_calendar-action__show-year.dhx_button.dhx_button--view_link.dhx_button--size_small.dhx_button--color_secondary.dhx_button--circle", date.getFullYear())),
@@ -4909,7 +5064,7 @@ var Calendar = /** @class */ (function (_super) {
                     tabIndex: 1,
                     _date: i
                 }, item); })),
-                this.config.view !== types_1.ViewMode.months ? dom_1.el(".dhx_calendar__actions", [
+                view !== types_1.ViewMode.months ? dom_1.el(".dhx_calendar__actions", [
                     dom_1.el("button.dhx_button.dhx_button--color_primary.dhx_button--view_link.dhx_button--size_small.dhx_button--width_full.dhx_button--circle.dhx_calendar-action__cancel", en_1.default.cancel)
                 ]) : null
             ])
@@ -4919,19 +5074,20 @@ var Calendar = /** @class */ (function (_super) {
         var _this = this;
         var date = this._currentDate;
         var yearsDiapason = DateHelper_1.DateHelper.getTwelweYears(date);
+        var _a = this.config, css = _a.css, timePicker = _a.timePicker, weekNumbers = _a.weekNumbers, width = _a.width, view = _a.view;
         var widgetClass = "dhx_calendar dhx_widget" +
-            (this.config.css ? " " + this.config.css : "") +
-            (this.config.timePicker ? " dhx_calendar--with_timepicker" : "") +
-            (this.config.weekNumbers ? " dhx_calendar--with_week-numbers" : "");
-        return dom_1.el("div", __assign({ class: widgetClass, style: { width: this.config.weekNumbers ? "calc(" + this.config.width + " + 48px)" : this.config.width } }, this._handlers), [
+            (css ? " " + css : "") +
+            (timePicker ? " dhx_calendar--with_timepicker" : "") +
+            (weekNumbers ? " dhx_calendar--with_week-numbers" : "");
+        return dom_1.el("div", __assign({ class: widgetClass, style: { width: weekNumbers ? "calc(" + width + " + 48px)" : width } }, this._handlers), [
             dom_1.el(".dhx_calendar__wrapper", [
                 this._drawHeader(dom_1.el("button.dhx_button.dhx_button--view_link.dhx_button--size_small.dhx_button--color_secondary.dhx_button--circle", yearsDiapason[0] + "-" + yearsDiapason[yearsDiapason.length - 1])),
                 dom_1.el(".dhx_calendar__years", yearsDiapason.map(function (item) { return dom_1.el("div", {
-                    class: "dhx_calendar-year" + (_this._selected && item === _this._selected.getFullYear() ? " dhx_calendar-year--selected" : ""),
+                    class: "dhx_calendar-year" + (_this._getSelected() && item === _this._getSelected().getFullYear() ? " dhx_calendar-year--selected" : ""),
                     _date: item,
                     tabIndex: 1,
                 }, item); })),
-                this.config.view !== types_1.ViewMode.years && this.config.view !== types_1.ViewMode.months ? dom_1.el(".dhx_calendar__actions", [
+                view !== types_1.ViewMode.years && view !== types_1.ViewMode.months ? dom_1.el(".dhx_calendar__actions", [
                     dom_1.el("button.dhx_button.dhx_button--color_primary.dhx_button--view_link.dhx_button--size_small.dhx_button--width_full.dhx_button--circle.dhx_calendar-action__cancel", en_1.default.cancel)
                 ]) : null
             ])
@@ -4949,9 +5105,10 @@ var Calendar = /** @class */ (function (_super) {
         ]);
     };
     Calendar.prototype._drawTimepicker = function () {
+        var _a = this.config, css = _a.css, weekNumbers = _a.weekNumbers, width = _a.width;
         return dom_1.el(".dhx_widget.dhx-calendar", {
-            class: (this.config.css ? " " + this.config.css : ""),
-            style: { width: this.config.weekNumbers ? "calc(" + this.config.width + " + 48px)" : this.config.width }
+            class: (css ? " " + css : ""),
+            style: { width: weekNumbers ? "calc(" + width + " + 48px)" : width }
         }, [
             dom_1.inject(this._timepicker.getRootView())
         ]);
@@ -4962,7 +5119,7 @@ exports.Calendar = Calendar;
 
 
 /***/ }),
-/* 30 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4971,12 +5128,12 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(31));
-__export(__webpack_require__(14));
+__export(__webpack_require__(32));
+__export(__webpack_require__(15));
 
 
 /***/ }),
-/* 31 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5008,13 +5165,13 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
 var dom_1 = __webpack_require__(1);
-var events_1 = __webpack_require__(4);
-var view_1 = __webpack_require__(3);
-var ts_layout_1 = __webpack_require__(32);
-var ts_slider_1 = __webpack_require__(35);
-var en_1 = __webpack_require__(38);
-var helper_1 = __webpack_require__(39);
-var types_1 = __webpack_require__(14);
+var events_1 = __webpack_require__(3);
+var view_1 = __webpack_require__(4);
+var ts_layout_1 = __webpack_require__(33);
+var ts_slider_1 = __webpack_require__(37);
+var en_1 = __webpack_require__(40);
+var helper_1 = __webpack_require__(41);
+var types_1 = __webpack_require__(15);
 var Timepicker = /** @class */ (function (_super) {
     __extends(Timepicker, _super);
     function Timepicker(container, config) {
@@ -5239,7 +5396,7 @@ function validate(value, max) {
 
 
 /***/ }),
-/* 32 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5248,11 +5405,12 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(33));
+__export(__webpack_require__(34));
+__export(__webpack_require__(5));
 
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5271,7 +5429,8 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var Cell_1 = __webpack_require__(34);
+var Cell_1 = __webpack_require__(35);
+var types_1 = __webpack_require__(5);
 var dom_1 = __webpack_require__(1);
 var Layout = /** @class */ (function (_super) {
     __extends(Layout, _super);
@@ -5313,6 +5472,9 @@ var Layout = /** @class */ (function (_super) {
         return _super.prototype.toVDOM.call(this, nodes);
     };
     Layout.prototype.removeCell = function (id) {
+        if (!this.events.fire(types_1.LayoutEvents.beforeRemove, [id])) {
+            return;
+        }
         var root = (this.config.parent || this);
         if (root !== this) {
             return root.removeCell(id);
@@ -5325,15 +5487,22 @@ var Layout = /** @class */ (function (_super) {
             parent_1._cells = parent_1._cells.filter(function (cell) { return cell.id !== id; });
             parent_1.paint();
         }
+        this.events.fire(types_1.LayoutEvents.afterRemove, [id]);
     };
     Layout.prototype.addCell = function (config, index) {
         if (index === void 0) { index = -1; }
+        if (!this.events.fire(types_1.LayoutEvents.beforeAdd, [config.id])) {
+            return;
+        }
         var view = this._createCell(config);
         if (index < 0) {
             index = this._cells.length + index + 1;
         }
         this._cells.splice(index, 0, view);
         this.paint();
+        if (!this.events.fire(types_1.LayoutEvents.afterAdd, [config.id])) {
+            return;
+        }
     };
     Layout.prototype.getId = function (index) {
         if (index < 0) {
@@ -5382,7 +5551,7 @@ exports.Layout = Layout;
 
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5414,56 +5583,10 @@ var __assign = (this && this.__assign) || function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
 var dom_1 = __webpack_require__(1);
-var view_1 = __webpack_require__(3);
-var resizeMode;
-(function (resizeMode) {
-    resizeMode[resizeMode["unknown"] = 0] = "unknown";
-    resizeMode[resizeMode["percents"] = 1] = "percents";
-    resizeMode[resizeMode["pixels"] = 2] = "pixels";
-    resizeMode[resizeMode["mixedpx1"] = 3] = "mixedpx1";
-    resizeMode[resizeMode["mixedpx2"] = 4] = "mixedpx2";
-    resizeMode[resizeMode["mixedperc1"] = 5] = "mixedperc1";
-    resizeMode[resizeMode["mixedperc2"] = 6] = "mixedperc2";
-})(resizeMode || (resizeMode = {}));
-function getResizeMode(dir, conf1, conf2) {
-    var field = dir ? "width" : "height";
-    var is1perc = conf1[field] && conf1[field].indexOf("%") !== -1;
-    var is2perc = conf2[field] && conf2[field].indexOf("%") !== -1;
-    var is1px = conf1[field] && conf1[field].indexOf("px") !== -1;
-    var is2px = conf2[field] && conf2[field].indexOf("px") !== -1;
-    if (is1perc && is2perc) {
-        return resizeMode.percents;
-    }
-    if (is1px && is2px) {
-        return resizeMode.pixels;
-    }
-    if (is1px && !is2px) {
-        return resizeMode.mixedpx1;
-    }
-    if (is2px && !is1px) {
-        return resizeMode.mixedpx2;
-    }
-    if (is1perc) {
-        return resizeMode.mixedperc1;
-    }
-    if (is2perc) {
-        return resizeMode.mixedperc2;
-    }
-    return resizeMode.unknown;
-}
-function getBlockRange(block1, block2, isXLayout) {
-    if (isXLayout === void 0) { isXLayout = true; }
-    if (isXLayout) {
-        return {
-            min: block1.left + window.pageXOffset,
-            max: block2.right + window.pageXOffset
-        };
-    }
-    return {
-        min: block1.top + window.pageYOffset,
-        max: block2.bottom + window.pageYOffset
-    };
-}
+var view_1 = __webpack_require__(4);
+var types_1 = __webpack_require__(5);
+var helpers_1 = __webpack_require__(36);
+var events_1 = __webpack_require__(3);
 var Cell = /** @class */ (function (_super) {
     __extends(Cell, _super);
     function Cell(parent, config) {
@@ -5471,6 +5594,12 @@ var Cell = /** @class */ (function (_super) {
         var p = parent;
         if (p && p.isVisible) {
             _this._parent = p;
+        }
+        if (_this._parent && _this._parent.events) {
+            _this.events = _this._parent.events;
+        }
+        else {
+            _this.events = new events_1.EventSystem(_this);
         }
         _this.config.full = _this.config.full === undefined ? Boolean(_this.config.header || _this.config.collapsable) : _this.config.full;
         _this._initHandlers();
@@ -5505,12 +5634,19 @@ var Cell = /** @class */ (function (_super) {
         return !this.config.hidden && (!this._parent || this._parent.isVisible());
     };
     Cell.prototype.hide = function () {
+        if (!this.events.fire(types_1.LayoutEvents.beforeHide, [this.id])) {
+            return;
+        }
         this.config.hidden = true;
         if (this._parent && this._parent.paint) {
             this._parent.paint();
         }
+        this.events.fire(types_1.LayoutEvents.afterHide, [this.id]);
     };
     Cell.prototype.show = function () {
+        if (!this.events.fire(types_1.LayoutEvents.beforeShow, [this.id])) {
+            return;
+        }
         if (this._parent && this._parent.config.activeView) {
             this._parent.config.activeView = this.id;
         }
@@ -5521,6 +5657,7 @@ var Cell = /** @class */ (function (_super) {
             this._parent.show();
         }
         this.paint();
+        this.events.fire(types_1.LayoutEvents.afterHide, [this.id]);
     };
     Cell.prototype.getParent = function () {
         return this._parent;
@@ -5599,7 +5736,7 @@ var Cell = /** @class */ (function (_super) {
                 (this.config.css ? " " + this.config.css : "") +
                 (this.config.collapsed ? " dhx_layout-cell--collapsed" : "") +
                 (this.config.resizable ? " dhx_layout-cell--resizeble" : "") +
-                //  только для селов
+                // for cells only
                 (this.config.gravity ? " dhx_layout-cell--gravity" : "") }), this.config.full ? [
             dom_1.el("div", {
                 tabindex: this.config.collapsable ? "0" : "-1",
@@ -5644,6 +5781,24 @@ var Cell = /** @class */ (function (_super) {
     };
     Cell.prototype._initHandlers = function () {
         var _this = this;
+        this._handlers = {
+            enterCollapse: function (e) {
+                if (e.keyCode === 13) {
+                    _this._handlers.collapse();
+                }
+            },
+            collapse: function () {
+                if (!_this.config.collapsable) {
+                    return;
+                }
+                if (!_this.events.fire(types_1.LayoutEvents.beforeCollapse, [_this.id])) {
+                    return;
+                }
+                _this.config.collapsed = !_this.config.collapsed;
+                _this.paint();
+                _this.events.fire(types_1.LayoutEvents.afterCollapse, [_this.id]);
+            }
+        };
         var blockOpts = {
             left: null,
             top: null,
@@ -5661,9 +5816,10 @@ var Cell = /** @class */ (function (_super) {
             document.body.classList.remove("dhx_no-select--resize");
             document.removeEventListener("mouseup", mouseUp);
             document.removeEventListener("mousemove", mouseMove);
+            _this.events.fire(types_1.LayoutEvents.afterResizeEnd, [_this.id]);
         };
         var mouseMove = function (e) {
-            if (!blockOpts.isActive || blockOpts.mode === resizeMode.unknown) {
+            if (!blockOpts.isActive || blockOpts.mode === types_1.resizeMode.unknown) {
                 return;
             }
             var newValue = blockOpts.xLayout
@@ -5677,42 +5833,29 @@ var Cell = /** @class */ (function (_super) {
                 newValue = blockOpts.size - blockOpts.resizerLength;
             }
             switch (blockOpts.mode) {
-                case resizeMode.pixels:
+                case types_1.resizeMode.pixels:
                     _this.config[prop] = newValue - blockOpts.resizerLength / 2 + "px";
                     blockOpts.nextCell.config[prop] = blockOpts.size - newValue - blockOpts.resizerLength / 2 + "px";
                     break;
-                case resizeMode.mixedpx1:
+                case types_1.resizeMode.mixedpx1:
                     _this.config[prop] = newValue - blockOpts.resizerLength / 2 + "px";
                     break;
-                case resizeMode.mixedpx2:
+                case types_1.resizeMode.mixedpx2:
                     blockOpts.nextCell.config[prop] = blockOpts.size - newValue - blockOpts.resizerLength / 2 + "px";
                     break;
-                case resizeMode.percents:
+                case types_1.resizeMode.percents:
                     _this.config[prop] = newValue / blockOpts.size * blockOpts.percentsum + "%";
                     blockOpts.nextCell.config[prop] = (blockOpts.size - newValue) / blockOpts.size * blockOpts.percentsum + "%";
                     break;
-                case resizeMode.mixedperc1:
+                case types_1.resizeMode.mixedperc1:
                     _this.config[prop] = newValue / blockOpts.size * blockOpts.percentsum + "%";
                     break;
-                case resizeMode.mixedperc2:
+                case types_1.resizeMode.mixedperc2:
                     blockOpts.nextCell.config[prop] = (blockOpts.size - newValue) / blockOpts.size * blockOpts.percentsum + "%";
                     break;
             }
             _this.paint();
-        };
-        this._handlers = {
-            enterCollapse: function (e) {
-                if (e.keyCode === 13) {
-                    _this._handlers.collapse();
-                }
-            },
-            collapse: function () {
-                if (!_this.config.collapsable) {
-                    return;
-                }
-                _this.config.collapsed = !_this.config.collapsed;
-                _this.paint();
-            }
+            _this.events.fire(types_1.LayoutEvents.resize, [_this.id]);
         };
         this._resizerHandlers = {
             onmousedown: function (e) {
@@ -5721,6 +5864,9 @@ var Cell = /** @class */ (function (_super) {
                 }
                 if (blockOpts.isActive) {
                     mouseUp();
+                }
+                if (!_this.events.fire(types_1.LayoutEvents.beforeResizeStart, [_this.id])) {
+                    return;
                 }
                 document.body.classList.add("dhx_no-select--resize");
                 var block = _this.getCellView();
@@ -5733,21 +5879,21 @@ var Cell = /** @class */ (function (_super) {
                 blockOpts.xLayout = _this._isXDirection();
                 blockOpts.left = blockOffsets.left + window.pageXOffset;
                 blockOpts.top = blockOffsets.top + window.pageYOffset;
-                blockOpts.range = getBlockRange(blockOffsets, nextBlockOffsets, blockOpts.xLayout);
+                blockOpts.range = helpers_1.getBlockRange(blockOffsets, nextBlockOffsets, blockOpts.xLayout);
                 blockOpts.size = blockOpts.range.max - blockOpts.range.min;
                 blockOpts.isActive = true;
                 blockOpts.nextCell = nextCell;
                 blockOpts.resizerLength = blockOpts.xLayout ? resizerOffsets.width : resizerOffsets.height;
-                blockOpts.mode = getResizeMode(blockOpts.xLayout, _this.config, nextCell.config);
-                if (blockOpts.mode === resizeMode.percents) {
+                blockOpts.mode = helpers_1.getResizeMode(blockOpts.xLayout, _this.config, nextCell.config);
+                if (blockOpts.mode === types_1.resizeMode.percents) {
                     var field = blockOpts.xLayout ? "width" : "height";
                     blockOpts.percentsum = parseFloat(_this.config[field]) + parseFloat(nextCell.config[field]);
                 }
-                if (blockOpts.mode === resizeMode.mixedperc1) {
+                if (blockOpts.mode === types_1.resizeMode.mixedperc1) {
                     var field = blockOpts.xLayout ? "width" : "height";
                     blockOpts.percentsum = 1 / (blockOffsets[field] / (blockOpts.size - blockOpts.resizerLength)) * parseFloat(_this.config[field]);
                 }
-                if (blockOpts.mode === resizeMode.mixedperc2) {
+                if (blockOpts.mode === types_1.resizeMode.mixedperc2) {
                     var field = blockOpts.xLayout ? "width" : "height";
                     blockOpts.percentsum = 1 / (nextBlockOffsets[field] / (blockOpts.size - blockOpts.resizerLength)) * parseFloat(nextCell.config[field]);
                 }
@@ -5820,7 +5966,58 @@ exports.Cell = Cell;
 
 
 /***/ }),
-/* 35 */
+/* 36 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var types_1 = __webpack_require__(5);
+function getResizeMode(isXLayout, conf1, conf2) {
+    var field = isXLayout ? "width" : "height";
+    var is1perc = conf1[field] && conf1[field].indexOf("%") !== -1;
+    var is2perc = conf2[field] && conf2[field].indexOf("%") !== -1;
+    var is1px = conf1[field] && conf1[field].indexOf("px") !== -1;
+    var is2px = conf2[field] && conf2[field].indexOf("px") !== -1;
+    if (is1perc && is2perc) {
+        return types_1.resizeMode.percents;
+    }
+    if (is1px && is2px) {
+        return types_1.resizeMode.pixels;
+    }
+    if (is1px && !is2px) {
+        return types_1.resizeMode.mixedpx1;
+    }
+    if (is2px && !is1px) {
+        return types_1.resizeMode.mixedpx2;
+    }
+    if (is1perc) {
+        return types_1.resizeMode.mixedperc1;
+    }
+    if (is2perc) {
+        return types_1.resizeMode.mixedperc2;
+    }
+    return types_1.resizeMode.unknown;
+}
+exports.getResizeMode = getResizeMode;
+function getBlockRange(block1, block2, isXLayout) {
+    if (isXLayout === void 0) { isXLayout = true; }
+    if (isXLayout) {
+        return {
+            min: block1.left + window.pageXOffset,
+            max: block2.right + window.pageXOffset
+        };
+    }
+    return {
+        min: block1.top + window.pageYOffset,
+        max: block2.bottom + window.pageYOffset
+    };
+}
+exports.getBlockRange = getBlockRange;
+
+
+/***/ }),
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5829,12 +6026,12 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(36));
-__export(__webpack_require__(13));
+__export(__webpack_require__(38));
+__export(__webpack_require__(14));
 
 
 /***/ }),
-/* 36 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5855,11 +6052,11 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
 var dom_1 = __webpack_require__(1);
-var events_1 = __webpack_require__(4);
-var Keymanager_1 = __webpack_require__(37);
-var view_1 = __webpack_require__(3);
-var ts_popup_1 = __webpack_require__(11);
-var types_1 = __webpack_require__(13);
+var events_1 = __webpack_require__(3);
+var Keymanager_1 = __webpack_require__(39);
+var view_1 = __webpack_require__(4);
+var ts_popup_1 = __webpack_require__(12);
+var types_1 = __webpack_require__(14);
 function normalizeValue(value, min, max) {
     if (value < min) {
         return min;
@@ -6433,7 +6630,7 @@ exports.Slider = Slider;
 
 
 /***/ }),
-/* 37 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6541,7 +6738,7 @@ exports.addHotkeys = addHotkeys;
 
 
 /***/ }),
-/* 38 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6556,7 +6753,7 @@ exports.default = locale;
 
 
 /***/ }),
-/* 39 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6572,14 +6769,14 @@ exports.isTimeCheck = isTimeCheck;
 
 
 /***/ }),
-/* 40 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
-var DateFormatter_1 = __webpack_require__(15);
+var DateFormatter_1 = __webpack_require__(16);
 var DateHelper = /** @class */ (function () {
     function DateHelper() {
     }
@@ -6611,14 +6808,22 @@ var DateHelper = /** @class */ (function () {
     };
     DateHelper.addMonth = function (d, count) {
         if (count === void 0) { count = 1; }
-        return new Date(d.getFullYear(), d.getMonth() + count, 1);
+        return new Date(d.getFullYear(), d.getMonth() + count);
     };
     DateHelper.addYear = function (d, count) {
         if (count === void 0) { count = 1; }
-        return new Date(d.getFullYear() + count, d.getMonth(), 0);
+        return new Date(d.getFullYear() + count, d.getMonth());
     };
-    DateHelper.withHoursAndMinutes = function (d, hours, minutes) {
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hours, minutes);
+    DateHelper.withHoursAndMinutes = function (d, hours, minutes, dateFormat) {
+        if (dateFormat === undefined || !dateFormat && hours === 12 || dateFormat && hours !== 12) {
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hours, minutes);
+        }
+        else if (dateFormat && hours === 12) {
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, minutes);
+        }
+        else {
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hours + 12, minutes);
+        }
     };
     DateHelper.setMonth = function (d, month) {
         d.setMonth(month);
@@ -6663,7 +6868,7 @@ exports.DateHelper = DateHelper;
 
 
 /***/ }),
-/* 41 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6673,7 +6878,7 @@ exports.linkButtonClasses = ".dhx_button.dhx_button--view_link.dhx_button--icon.
 
 
 /***/ }),
-/* 42 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
