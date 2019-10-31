@@ -77,7 +77,6 @@ var CalendarHelper = {
 												else
 													myCalendar.setValue(dd);
 											}
-												myCalendar.setValue(dateInput.value);
 											else
 												myCalendar.setValue(new Date());
 					
