@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.2.1 GPL
+dhtmlxCalendar v.6.3.1 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -112,7 +112,7 @@ return /******/ (function(modules) { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var html_1 = __webpack_require__(2);
+var html_1 = __webpack_require__(1);
 var counter = (new Date()).valueOf();
 function uid() {
     return "u" + (counter++);
@@ -250,64 +250,6 @@ exports.downloadFile = downloadFile;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(Promise) {
-Object.defineProperty(exports, "__esModule", { value: true });
-var dom = __webpack_require__(29);
-exports.el = dom.defineElement;
-exports.sv = dom.defineSvgElement;
-exports.view = dom.defineView;
-exports.create = dom.createView;
-exports.inject = dom.injectView;
-exports.KEYED_LIST = dom.KEYED_LIST;
-function disableHelp() {
-    dom.DEVMODE.mutations = false;
-    dom.DEVMODE.warnings = false;
-    dom.DEVMODE.verbose = false;
-    dom.DEVMODE.UNKEYED_INPUT = false;
-}
-exports.disableHelp = disableHelp;
-function resizer(handler) {
-    var resize = window.ResizeObserver;
-    var activeHandler = function (node) {
-        var height = node.el.offsetHeight;
-        var width = node.el.offsetWidth;
-        handler(width, height);
-    };
-    if (resize) {
-        return exports.el("div.dhx-resize-observer", {
-            _hooks: {
-                didInsert: function (node) {
-                    new resize(function () { return activeHandler(node); }).observe(node.el);
-                }
-            }
-        });
-    }
-    return exports.el("iframe.dhx-resize-observer", {
-        _hooks: {
-            didInsert: function (node) {
-                node.el.contentWindow.onresize = function () { return activeHandler(node); };
-                activeHandler(node);
-            }
-        }
-    });
-}
-exports.resizer = resizer;
-function awaitRedraw() {
-    return new Promise(function (res) {
-        requestAnimationFrame(function () {
-            res();
-        });
-    });
-}
-exports.awaitRedraw = awaitRedraw;
-
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7)))
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
 
 var __assign = (this && this.__assign) || function () {
     __assign = Object.assign || function(t) {
@@ -356,10 +298,11 @@ function locate(target, attr) {
     return node ? node.getAttribute(attr) : "";
 }
 exports.locate = locate;
-function locateNode(target, attr) {
+function locateNode(target, attr, dir) {
     if (attr === void 0) { attr = "dhx_id"; }
+    if (dir === void 0) { dir = "target"; }
     if (target instanceof Event) {
-        target = target.target;
+        target = target[dir];
     }
     while (target) {
         if (target.getAttribute && target.getAttribute(attr)) {
@@ -561,6 +504,68 @@ function placeRightOrLeft(pos, config) {
 
 
 /***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(Promise) {
+Object.defineProperty(exports, "__esModule", { value: true });
+var dom = __webpack_require__(29);
+exports.el = dom.defineElement;
+exports.sv = dom.defineSvgElement;
+exports.view = dom.defineView;
+exports.create = dom.createView;
+exports.inject = dom.injectView;
+exports.KEYED_LIST = dom.KEYED_LIST;
+function disableHelp() {
+    dom.DEVMODE.mutations = false;
+    dom.DEVMODE.warnings = false;
+    dom.DEVMODE.verbose = false;
+    dom.DEVMODE.UNKEYED_INPUT = false;
+}
+exports.disableHelp = disableHelp;
+function resizer(handler) {
+    var resize = window.ResizeObserver;
+    var activeHandler = function (node) {
+        var height = node.el.offsetHeight;
+        var width = node.el.offsetWidth;
+        handler(width, height);
+    };
+    if (resize) {
+        return exports.el("div.dhx-resize-observer", {
+            _hooks: {
+                didInsert: function (node) {
+                    new resize(function () { return activeHandler(node); }).observe(node.el);
+                }
+            }
+        });
+    }
+    return exports.el("iframe.dhx-resize-observer", {
+        _hooks: {
+            didInsert: function (node) {
+                node.el.contentWindow.onresize = function () { return activeHandler(node); };
+                activeHandler(node);
+            }
+        }
+    });
+}
+exports.resizer = resizer;
+function resizeHandler(container, handler) {
+    return exports.create({ render: function () { return resizer(handler); } }).mount(container);
+}
+exports.resizeHandler = resizeHandler;
+function awaitRedraw() {
+    return new Promise(function (res) {
+        requestAnimationFrame(function () {
+            res();
+        });
+    });
+}
+exports.awaitRedraw = awaitRedraw;
+
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(7)))
+
+/***/ }),
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -626,7 +631,7 @@ exports.EventsMixin = EventsMixin;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
-var html_1 = __webpack_require__(2);
+var html_1 = __webpack_require__(1);
 var View = /** @class */ (function () {
     function View(_container, config) {
         this._uid = core_1.uid();
@@ -1175,10 +1180,10 @@ __export(__webpack_require__(13));
 Object.defineProperty(exports, "__esModule", { value: true });
 var PopupEvents;
 (function (PopupEvents) {
-    PopupEvents["beforeHide"] = "beforehide";
-    PopupEvents["beforeShow"] = "beforeshow";
-    PopupEvents["afterHide"] = "afterhide";
-    PopupEvents["afterShow"] = "aftershow";
+    PopupEvents["beforeHide"] = "beforeHide";
+    PopupEvents["beforeShow"] = "beforeShow";
+    PopupEvents["afterHide"] = "afterHide";
+    PopupEvents["afterShow"] = "afterShow";
     PopupEvents["click"] = "click";
 })(PopupEvents = exports.PopupEvents || (exports.PopupEvents = {}));
 
@@ -1451,6 +1456,9 @@ function tokenizeFormat(format) {
     return tokens;
 }
 function stringToDate(str, format, validate) {
+    if (typeof str !== "string") {
+        return;
+    }
     var tokens = tokenizeFormat(format);
     var dateParts = [];
     var index = 0;
@@ -1560,7 +1568,7 @@ __export(__webpack_require__(6));
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var html_1 = __webpack_require__(2);
+var html_1 = __webpack_require__(1);
 var types_1 = __webpack_require__(6);
 var nodeTimeout = new WeakMap();
 var containers = new Map();
@@ -2196,7 +2204,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var html_1 = __webpack_require__(2);
+var html_1 = __webpack_require__(1);
 var types_1 = __webpack_require__(6);
 var DEFAULT_SHOW_DELAY = 750;
 var DEFAULT_HIDE_DELAY = 200;
@@ -2399,9 +2407,9 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
-var dom_1 = __webpack_require__(1);
+var dom_1 = __webpack_require__(2);
 var events_1 = __webpack_require__(3);
-var html_1 = __webpack_require__(2);
+var html_1 = __webpack_require__(1);
 var view_1 = __webpack_require__(4);
 var types_1 = __webpack_require__(13);
 var Popup = /** @class */ (function (_super) {
@@ -2439,10 +2447,10 @@ var Popup = /** @class */ (function (_super) {
         document.body.appendChild(this._popup);
         this._setPopupSize(node, config);
         this._isActive = true;
-        setTimeout(function () {
+        dom_1.awaitRedraw().then(function () {
             _this.events.fire(types_1.PopupEvents.afterShow, [node]);
             _this._outerClickDestructor = _this._detectOuterClick(node);
-        }, 100);
+        });
     };
     Popup.prototype.hide = function () {
         this._hide(false, null);
@@ -4562,7 +4570,7 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
-var dom_1 = __webpack_require__(1);
+var dom_1 = __webpack_require__(2);
 var events_1 = __webpack_require__(3);
 var view_1 = __webpack_require__(4);
 var ts_timepicker_1 = __webpack_require__(31);
@@ -4616,7 +4624,7 @@ var Calendar = /** @class */ (function (_super) {
                 _this._currentViewMode = types_1.ViewMode.years;
                 break;
             default:
-                _this._currentViewMode = types_1.ViewMode.days;
+                _this._currentViewMode = types_1.ViewMode.calendar;
         }
         _this._initHandlers();
         if (_this.config.timePicker) {
@@ -4626,7 +4634,7 @@ var Calendar = /** @class */ (function (_super) {
             _this._time = _this._timepicker.getValue();
             _this._timepicker.events.on(ts_timepicker_1.TimepickerEvents.close, function () {
                 _this._timepicker.setValue(_this._time);
-                _this.showDate(null, types_1.ViewMode.days);
+                _this.showDate(null, types_1.ViewMode.calendar);
             });
             _this._timepicker.events.on(ts_timepicker_1.TimepickerEvents.save, function () {
                 var _a = _this._timepicker.getValue(true), hour = _a.hour, minute = _a.minute, AM = _a.AM;
@@ -4637,7 +4645,7 @@ var Calendar = /** @class */ (function (_super) {
                     _this.events.fire(types_1.CalendarEvents.change, [newDate, oldDate, true]);
                 }
                 _this._time = _this._timepicker.getValue();
-                _this.showDate(null, types_1.ViewMode.days);
+                _this.showDate(null, types_1.ViewMode.calendar);
             });
         }
         var render = function () { return _this._draw(); };
@@ -4678,6 +4686,9 @@ var Calendar = /** @class */ (function (_super) {
         return asDateObject
             ? DateHelper_1.DateHelper.copy(this._selected[0])
             : DateFormatter_1.getFormatedDate(this.config.dateFormat, this._selected[0]);
+    };
+    Calendar.prototype.getCurrentMode = function () {
+        return this._currentViewMode;
     };
     Calendar.prototype.showDate = function (date, mode) {
         if (date) {
@@ -4791,13 +4802,17 @@ var Calendar = /** @class */ (function (_super) {
     };
     Calendar.prototype._draw = function () {
         switch (this._currentViewMode) {
-            case types_1.ViewMode.days:
+            case types_1.ViewMode.calendar:
+                this.events.fire(types_1.CalendarEvents.modeChange, [types_1.ViewMode.calendar]);
                 return this._drawCalendar();
             case types_1.ViewMode.months:
+                this.events.fire(types_1.CalendarEvents.modeChange, [types_1.ViewMode.months]);
                 return this._drawMonthSelector();
             case types_1.ViewMode.years:
+                this.events.fire(types_1.CalendarEvents.modeChange, [types_1.ViewMode.years]);
                 return this._drawYearSelector();
             case types_1.ViewMode.timepicker:
+                this.events.fire(types_1.CalendarEvents.modeChange, [types_1.ViewMode.timepicker]);
                 return this._drawTimepicker();
         }
     };
@@ -4809,7 +4824,7 @@ var Calendar = /** @class */ (function (_super) {
                     var date = vn.attrs._date;
                     var oldDate = DateHelper_1.DateHelper.copy(_this._getSelected());
                     switch (_this._currentViewMode) {
-                        case types_1.ViewMode.days:
+                        case types_1.ViewMode.calendar:
                             var mergedDate = _this.config.timePicker
                                 ? DateHelper_1.DateHelper.mergeHoursAndMinutes(date, _this._getSelected() || _this._currentDate)
                                 : date;
@@ -4829,7 +4844,8 @@ var Calendar = /** @class */ (function (_super) {
                         case types_1.ViewMode.months:
                             if (_this.config.view !== types_1.ViewMode.months) {
                                 DateHelper_1.DateHelper.setMonth(_this._currentDate, date);
-                                _this.showDate(null, types_1.ViewMode.days);
+                                _this.showDate(null, types_1.ViewMode.calendar);
+                                _this.events.fire(types_1.CalendarEvents.monthSelected, [date]);
                             }
                             else {
                                 var newDate = DateHelper_1.DateHelper.fromYearAndMonth(_this._currentDate.getFullYear() || _this._getSelected().getFullYear(), date);
@@ -4839,6 +4855,7 @@ var Calendar = /** @class */ (function (_super) {
                                 _this._currentDate = newDate;
                                 _this._selected[0] = newDate;
                                 _this.events.fire(types_1.CalendarEvents.change, [_this._getSelected(), oldDate, true]);
+                                _this.events.fire(types_1.CalendarEvents.monthSelected, [date]);
                                 _this.paint();
                             }
                             break;
@@ -4846,6 +4863,7 @@ var Calendar = /** @class */ (function (_super) {
                             if (_this.config.view !== types_1.ViewMode.years) {
                                 DateHelper_1.DateHelper.setYear(_this._currentDate, date);
                                 _this.showDate(null, types_1.ViewMode.months);
+                                _this.events.fire(types_1.CalendarEvents.yearSelected, [date]);
                             }
                             else {
                                 var newDate = DateHelper_1.DateHelper.fromYear(date);
@@ -4855,17 +4873,21 @@ var Calendar = /** @class */ (function (_super) {
                                 _this._currentDate = newDate;
                                 _this._selected[0] = newDate;
                                 _this.events.fire(types_1.CalendarEvents.change, [_this._getSelected(), oldDate, true]);
+                                _this.events.fire(types_1.CalendarEvents.yearSelected, [date]);
                                 _this.paint();
                             }
                     }
                 },
-                ".dhx_calendar-action__cancel": function () { return _this.showDate(_this._getSelected(), types_1.ViewMode.days); },
+                ".dhx_calendar-action__cancel": function () {
+                    _this.showDate(_this._getSelected(), types_1.ViewMode.calendar);
+                    _this.events.fire(types_1.CalendarEvents.cancelClick, []);
+                },
                 ".dhx_calendar-action__show-month": function () { return _this.showDate(null, types_1.ViewMode.months); },
                 ".dhx_calendar-action__show-year": function () { return _this.showDate(null, types_1.ViewMode.years); },
                 ".dhx_calendar-action__next": function () {
                     var newDate;
                     switch (_this._currentViewMode) {
-                        case types_1.ViewMode.days:
+                        case types_1.ViewMode.calendar:
                             newDate = DateHelper_1.DateHelper.addMonth(_this._currentDate, 1);
                             break;
                         case types_1.ViewMode.months:
@@ -4879,7 +4901,7 @@ var Calendar = /** @class */ (function (_super) {
                 ".dhx_calendar-action__prev": function () {
                     var newDate;
                     switch (_this._currentViewMode) {
-                        case types_1.ViewMode.days:
+                        case types_1.ViewMode.calendar:
                             newDate = DateHelper_1.DateHelper.addMonth(_this._currentDate, -1);
                             break;
                         case types_1.ViewMode.months:
@@ -5164,7 +5186,7 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
-var dom_1 = __webpack_require__(1);
+var dom_1 = __webpack_require__(2);
 var events_1 = __webpack_require__(3);
 var view_1 = __webpack_require__(4);
 var ts_layout_1 = __webpack_require__(33);
@@ -5308,9 +5330,9 @@ var Timepicker = /** @class */ (function (_super) {
             labelInline: false,
             label: en_1.default.hours
         });
-        layout.cell("timepicker").attach(inputsView);
-        layout.cell("hour-slider").attach(hSlider);
-        layout.cell("minute-slider").attach(mSlider);
+        layout.getCell("timepicker").attach(inputsView);
+        layout.getCell("hour-slider").attach(hSlider);
+        layout.getCell("minute-slider").attach(mSlider);
         if (this.config.actions) {
             var save = function () {
                 return dom_1.el("button.dhx_timepicker__button-save.dhx_button.dhx_button--view_flat.dhx_button--color_primary.dhx_button--size_medium.dhx_button--circle.dhx_button--width_full", { onclick: _this._outerHandlers.save }, en_1.default.save);
@@ -5320,8 +5342,8 @@ var Timepicker = /** @class */ (function (_super) {
                     onclick: _this._outerHandlers.close
                 }, [dom_1.el("span.dhx_button__icon.dxi.dxi-close")]);
             };
-            layout.cell("save-action").attach(save);
-            layout.cell("close-action").attach(close_1);
+            layout.getCell("save-action").attach(save);
+            layout.getCell("close-action").attach(close_1);
         }
     };
     Timepicker.prototype._initHandlers = function () {
@@ -5431,7 +5453,7 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var Cell_1 = __webpack_require__(35);
 var types_1 = __webpack_require__(5);
-var dom_1 = __webpack_require__(1);
+var dom_1 = __webpack_require__(2);
 var Layout = /** @class */ (function (_super) {
     __extends(Layout, _super);
     function Layout(parent, config) {
@@ -5450,13 +5472,9 @@ var Layout = /** @class */ (function (_super) {
         }
         return _this;
     }
-    Layout.prototype.cell = function (id) {
-        // FIXME
-        return this._root._all[id];
-    };
     Layout.prototype.toVDOM = function () {
         if (this._isViewLayout) {
-            var roots = [this.cell(this.config.activeView).toVDOM()];
+            var roots = [this.getCell(this.config.activeView).toVDOM()];
             return _super.prototype.toVDOM.call(this, roots);
         }
         var nodes = [];
@@ -5480,7 +5498,7 @@ var Layout = /** @class */ (function (_super) {
             return root.removeCell(id);
         }
         // this === root layout
-        var view = this.cell(id);
+        var view = this.getCell(id);
         if (view) {
             var parent_1 = view.getParent();
             delete this._all[id];
@@ -5512,6 +5530,13 @@ var Layout = /** @class */ (function (_super) {
     };
     Layout.prototype.getRefs = function (name) {
         return this._root.getRootView().refs[name];
+    };
+    Layout.prototype.getCell = function (id) {
+        return this._root._all[id];
+    };
+    // TODO: remove sute_7.0
+    Layout.prototype.cell = function (id) {
+        return this.getCell(id);
     };
     Layout.prototype._getCss = function (content) {
         var layoutCss = this._xLayout ? "dhx_layout-columns" : "dhx_layout-rows";
@@ -5582,7 +5607,7 @@ var __assign = (this && this.__assign) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
-var dom_1 = __webpack_require__(1);
+var dom_1 = __webpack_require__(2);
 var view_1 = __webpack_require__(4);
 var types_1 = __webpack_require__(5);
 var helpers_1 = __webpack_require__(36);
@@ -5761,7 +5786,7 @@ var Cell = /** @class */ (function (_super) {
                 }),
             ]),
             !this.config.collapsed ? dom_1.el("div", {
-                "style": this.config.html || nodes ? stylePadding : null,
+                "style": stylePadding,
                 ".innerHTML": this.config.html,
                 "class": this._getCss(true) + " dhx_layout-cell-content",
             }, kids) : null
@@ -6051,7 +6076,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
-var dom_1 = __webpack_require__(1);
+var dom_1 = __webpack_require__(2);
 var events_1 = __webpack_require__(3);
 var Keymanager_1 = __webpack_require__(39);
 var view_1 = __webpack_require__(4);
@@ -6222,9 +6247,13 @@ var Slider = /** @class */ (function (_super) {
         if (this.config.inverse) {
             value = -value;
         }
+        var _a = this.config, max = _a.max, min = _a.min;
         var oldValue = forExtra ? this._getValue(this._extraCurrentPosition) : this._getValue(this._currentPosition);
         var newValue = oldValue + value;
         this._setValue(oldValue + value, forExtra);
+        if (newValue > max || newValue < min) {
+            newValue = oldValue;
+        }
         this.events.fire(types_1.SliderEvents.change, [newValue, oldValue, forExtra]);
         this.paint();
     };
@@ -6636,6 +6665,7 @@ exports.Slider = Slider;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var html_1 = __webpack_require__(1);
 function getHotKeyCode(code) {
     var matches = code.toLowerCase().match(/\w+/g);
     var comp = 0;
@@ -6668,7 +6698,13 @@ var KeyManager = /** @class */ (function () {
                 key = String.fromCharCode(e.which);
             }
             else {
-                key = e.key;
+                // dirty: added space binding
+                if (e.which === 32 && !html_1.isIE()) {
+                    key = e.code;
+                }
+                else {
+                    key = e.key;
+                }
             }
             var code = comp + (key && key.toLowerCase());
             var actions = _this._keysStorage[code];
@@ -6886,7 +6922,7 @@ exports.linkButtonClasses = ".dhx_button.dhx_button--view_link.dhx_button--icon.
 Object.defineProperty(exports, "__esModule", { value: true });
 var ViewMode;
 (function (ViewMode) {
-    ViewMode["days"] = "calendar";
+    ViewMode["calendar"] = "calendar";
     ViewMode["years"] = "year";
     ViewMode["months"] = "month";
     ViewMode["timepicker"] = "timepicker";
@@ -6895,7 +6931,11 @@ var CalendarEvents;
 (function (CalendarEvents) {
     CalendarEvents["change"] = "change";
     CalendarEvents["beforeChange"] = "beforechange";
+    CalendarEvents["modeChange"] = "modeChange";
     CalendarEvents["dateHover"] = "dateHover";
+    CalendarEvents["monthSelected"] = "monthSelected";
+    CalendarEvents["yearSelected"] = "yearSelected";
+    CalendarEvents["cancelClick"] = "cancelClick";
 })(CalendarEvents = exports.CalendarEvents || (exports.CalendarEvents = {}));
 
 

@@ -6,20 +6,12 @@
 		<meta name="description" content="Check interactive samples of DHTMLX Calendar to explore its events and other details.">
 		<!-- end meta block -->
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" charset="utf-8">
-		<script type="text/javascript" src="../../codebase/calendar.js?v=6.2.1"></script>
-		<link rel="stylesheet" href="../../codebase/calendar.css?v=6.2.1">
-		<link rel="stylesheet" href="../common/index.css?v=6.2.1">
-		<link rel="stylesheet" href="../common/calendar.css?v=6.2.1">
+		<script type="text/javascript" src="../../codebase/calendar.js?v=6.3.1"></script>
+		<link rel="stylesheet" href="../../codebase/calendar.css?v=6.3.1">
+		<link rel="stylesheet" href="../common/index.css?v=6.3.1">
+		<link rel="stylesheet" href="../common/calendar.css?v=6.3.1">
+		
 		<!-- custom sample head -->
-		<style>
-			.dhx_sample-container {
-				width: 800px;
-			}
-			.dhx_sample-container__sidebar {
-				width: 600px;
-				height: 500px;
-			}
-		</style>
 	</head>
 	<body>
 		<header class="dhx_sample-header">
@@ -39,7 +31,7 @@
 				</nav>
 				<h1 class="dhx_sample-header__title">
 					<div class="dhx_sample-header__content">
-							Use the calendar to display events.
+						Use the calendar to display events.
 						<div class="dhx_sample-docs-links">
 							Check documentation:
 							<a href="https://docs.dhtmlx.com/suite/calendar__api__refs__calendar_events.html" target="_blank" class="dhx_sample-header-link">Events</a>
@@ -51,16 +43,20 @@
 		</header>
 		<section class="dhx_sample-container">
 			<div class="dhx_sample-container__widget" id="calendar"></div>
-			<div class="dhx_sample-container__sidebar" id="events"> </div>
+			<div class="dhx_sample-container__sidebar"></div>
 		</section>
 
 		<script>
-			var calendar = new dhx.Calendar("calendar", {css: "dhx_widget--bordered"});
-			var info = document.getElementById("events");
+			var calendar = new dhx.Calendar("calendar", { css: "dhx_widget--bordered", timePicker: true });
+			var info = document.querySelector(".dhx_sample-container__sidebar");
 			var events = [
-				"change",
-				"dateHover",
-				"beforeChange"
+				"Change",
+				"DateHover",
+				"BeforeChange",
+				"ModeChange",
+				"MonthSelected",
+				"YearSelected",
+				"CancelClick"
 			];
 			var counter = 1;
 
@@ -76,7 +72,7 @@
 					argsList += "<div>" + args[i] + "</div>";
 				}
 				return "<div class=\"dhx_sample-event\">Event " + counter++ + ": " + event + argsList + "</div>";
-			};
+			}
 		</script>
 
 	</body>
