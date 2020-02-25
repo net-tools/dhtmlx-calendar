@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<!-- meta block -->
-		<title>Get current mode - DHTMLX Calendar</title>
+		<title>Clear value - DHTMLX Calendar</title>
 		<meta name="description" content="Check interactive samples of DHTMLX Calendar to explore its usage and other details.">
 		<!-- end meta block -->
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" charset="utf-8">
@@ -25,32 +25,40 @@
 							<a href="./index.html" class="dhx_sample-header-breadcrumbs__link">Usage</a>
 						</li>
 						<li class="dhx_sample-header-breadcrumbs__item">
-							<span class="dhx_sample-header-breadcrumbs__link">Get current mode</span>
+							<span class="dhx_sample-header-breadcrumbs__link">Clear value</span>
 						</li>
 					</ul>
 				</nav>
 				<h1 class="dhx_sample-header__title">
 					<div class="dhx_sample-header__content">
-						Get current mode.
+						Clear value.
 					</div>
 				</h1>
 			</div>
-</header>
+		</header>
 		<section class="dhx_sample-controls">
-			<button id="getCurrentMode" class="dhx_sample-btn dhx_sample-btn--flat">Get current mode</button>
-			<input id="viewMode" class="dhx_sample-input" type="text" readonly>
+			<button id="clear" class="dhx_sample-btn dhx_sample-btn--flat">Clear</button>
+			<input id="value" type="text" readonly class="dhx_sample-input">
 		</section>
 		<section class="dhx_sample-container">
 			<div class="dhx_sample-container__widget" id="calendar"></div>
 		</section>
 		<script>
-			var calendar = new dhx.Calendar("calendar", {
+			var calendar = new dhx.Calendar("calendar", { 
 				css: "dhx_widget--bordered",
 				timePicker: true
 			});
-			document.querySelector("#getCurrentMode").addEventListener("click", function () {
-				document.querySelector("#viewMode").value = calendar.getCurrentMode();
+			function viewValue() {
+				document.querySelector("#value").value = calendar.getValue();
+			}
+			document.querySelector("#clear").addEventListener("click", function() {
+				calendar.clear();
+				viewValue();
 			});
+			calendar.events.on("change", function() {
+				viewValue();
+			});
+			calendar.setValue(new Date());
 		</script>
 	</body>
 </html>

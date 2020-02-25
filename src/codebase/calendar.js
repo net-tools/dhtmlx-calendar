@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.3.1 GPL
+dhtmlxCalendar v.6.4.1 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -124,7 +124,10 @@ function extend(target, source, deep) {
         for (var key in source) {
             var sobj = source[key];
             var tobj = target[key];
-            if (deep && typeof tobj === "object" && !(tobj instanceof Date) && !(tobj instanceof Array)) {
+            if (sobj === undefined) {
+                delete target[key];
+            }
+            else if (deep && typeof tobj === "object" && !(tobj instanceof Date) && !(tobj instanceof Array)) {
                 extend(tobj, sobj);
             }
             else {
@@ -243,6 +246,56 @@ function downloadFile(data, filename, mimeType) {
     }
 }
 exports.downloadFile = downloadFile;
+function debounce(func, wait, immediate) {
+    var timeout;
+    return function executedFunction() {
+        var _this = this;
+        var args = arguments;
+        var later = function () {
+            timeout = null;
+            if (!immediate) {
+                func.apply(_this, args);
+            }
+        };
+        var callNow = immediate && !timeout;
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+        if (callNow) {
+            func.apply(this, args);
+        }
+    };
+}
+exports.debounce = debounce;
+function compare(obj1, obj2) {
+    for (var p in obj1) {
+        if (obj1.hasOwnProperty(p) !== obj2.hasOwnProperty(p)) {
+            return false;
+        }
+        switch (typeof (obj1[p])) {
+            case "object":
+                if (!compare(obj1[p], obj2[p])) {
+                    return false;
+                }
+                break;
+            case "function":
+                if (typeof (obj2[p]) === "undefined" || (p !== "compare" && obj1[p].toString() !== obj2[p].toString())) {
+                    return false;
+                }
+                break;
+            default:
+                if (obj1[p] !== obj2[p]) {
+                    return false;
+                }
+        }
+    }
+    for (var p in obj2) {
+        if (typeof (obj1[p]) === "undefined") {
+            return false;
+        }
+    }
+    return true;
+}
+exports.compare = compare;
 
 
 /***/ }),
@@ -312,6 +365,23 @@ function locateNode(target, attr, dir) {
     }
 }
 exports.locateNode = locateNode;
+function locateNodeByClassName(target, className) {
+    if (target instanceof Event) {
+        target = target.target;
+    }
+    while (target) {
+        if (className) {
+            if (target.classList && target.classList.contains(className)) {
+                return target;
+            }
+        }
+        else if (target.getAttribute && target.getAttribute("dhx_id")) {
+            return target;
+        }
+        target = target.parentNode;
+    }
+}
+exports.locateNodeByClassName = locateNodeByClassName;
 function getBox(elem) {
     var box = elem.getBoundingClientRect();
     var body = document.body;
@@ -433,7 +503,7 @@ function placeBottomOrTop(pos, config) {
     }
     if (bottomDiff < 0 && topDiff < 0) {
         if (config.auto) {
-            return placeRightOrLeft(pos, __assign({}, config, { mode: Position.right, auto: false }));
+            return placeRightOrLeft(pos, __assign(__assign({}, config), { mode: Position.right, auto: false }));
         }
         top = bottomDiff > topDiff ? pos.bottom : topDiff;
     }
@@ -479,7 +549,7 @@ function placeRightOrLeft(pos, config) {
     }
     if (leftDiff < 0 && rightDiff < 0) {
         if (config.auto) {
-            return placeBottomOrTop(pos, __assign({}, config, { mode: Position.bottom, auto: false }));
+            return placeBottomOrTop(pos, __assign(__assign({}, config), { mode: Position.bottom, auto: false }));
         }
         left = leftDiff > rightDiff ? leftDiff : pos.right;
     }
@@ -708,6 +778,8 @@ var LayoutEvents;
     LayoutEvents["afterRemove"] = "afterRemove";
     LayoutEvents["beforeCollapse"] = "beforeCollapse";
     LayoutEvents["afterCollapse"] = "afterCollapse";
+    LayoutEvents["beforeExpand"] = "beforeExpand";
+    LayoutEvents["afterExpand"] = "afterExpand";
 })(LayoutEvents = exports.LayoutEvents || (exports.LayoutEvents = {}));
 var resizeMode;
 (function (resizeMode) {
@@ -1218,8 +1290,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var TimepickerEvents;
 (function (TimepickerEvents) {
     TimepickerEvents["change"] = "change";
-    TimepickerEvents["save"] = "save";
+    TimepickerEvents["apply"] = "apply";
+    TimepickerEvents["beforeClose"] = "beforeClose";
+    TimepickerEvents["afterClose"] = "afterClose";
+    // TODO: remove sute_7.0
     TimepickerEvents["close"] = "close";
+    TimepickerEvents["save"] = "save";
 })(TimepickerEvents = exports.TimepickerEvents || (exports.TimepickerEvents = {}));
 
 
@@ -1520,12 +1596,14 @@ exports.stringToDate = stringToDate;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 __webpack_require__(18);
+// WIDGETS
 var ts_message_1 = __webpack_require__(19);
 exports.tooltip = ts_message_1.tooltip;
 var ts_popup_1 = __webpack_require__(12);
 exports.Popup = ts_popup_1.Popup;
 var Calendar_1 = __webpack_require__(30);
 exports.Calendar = Calendar_1.Calendar;
+// TOOLS
 var en_1 = __webpack_require__(9);
 var w = window;
 exports.i18n = (w.dhx && w.dhx.i18n) ? w.dhx.i18 : {};
@@ -2348,7 +2426,7 @@ function tooltip(text, config) {
     if (hideTimeout) {
         clearTimeout(hideTimeout);
         hideTimeout = null;
-        addListeners(node, text, __assign({}, config, { force: true }));
+        addListeners(node, text, __assign(__assign({}, config), { force: true }));
     }
     else {
         addListeners(node, text, config);
@@ -2537,7 +2615,7 @@ var Popup = /** @class */ (function (_super) {
             });
             return;
         }
-        var _b = html_1.fitPosition(node, __assign({ centering: true, mode: html_1.Position.bottom }, config, { width: width, height: height })), left = _b.left, top = _b.top;
+        var _b = html_1.fitPosition(node, __assign(__assign({ centering: true, mode: html_1.Position.bottom }, config), { width: width, height: height })), left = _b.left, top = _b.top;
         this._popup.style.left = left;
         this._popup.style.top = top;
         if (config.indent && config.indent !== 0) {
@@ -4568,6 +4646,13 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
 var dom_1 = __webpack_require__(2);
@@ -4589,8 +4674,10 @@ var Calendar = /** @class */ (function (_super) {
             dateFormat: (window && window.dhx && window.dhx.dateFormat),
             width: "250px"
         }, config)) || this;
-        _this.events = new events_1.EventSystem();
         _this._selected = [];
+        _this.events = new events_1.EventSystem();
+        _this.config.disabledDates = _this.config.disabledDates || _this.config.block; // TODO: remove sute_7.0
+        _this.config.mode = _this.config.mode || _this.config.view; // TODO: remove sute_7.0
         if (!_this.config.dateFormat) {
             if (_this.config.timePicker) {
                 if (_this.config.timeFormat === 12) {
@@ -4616,7 +4703,7 @@ var Calendar = /** @class */ (function (_super) {
         else {
             _this._currentDate = new Date();
         }
-        switch (_this.config.view) {
+        switch (_this.config.mode) {
             case types_1.ViewMode.months:
                 _this._currentViewMode = types_1.ViewMode.months;
                 break;
@@ -4628,15 +4715,15 @@ var Calendar = /** @class */ (function (_super) {
         }
         _this._initHandlers();
         if (_this.config.timePicker) {
-            _this._timepicker = new ts_timepicker_1.Timepicker(null, { timeFormat: _this.config.timeFormat, actions: true });
+            _this._timepicker = new ts_timepicker_1.Timepicker(null, { timeFormat: _this.config.timeFormat, controls: true });
             var initTime = _this._getSelected() || new Date();
             _this._timepicker.setValue(initTime);
             _this._time = _this._timepicker.getValue();
-            _this._timepicker.events.on(ts_timepicker_1.TimepickerEvents.close, function () {
+            _this._timepicker.events.on(ts_timepicker_1.TimepickerEvents.afterClose, function () {
                 _this._timepicker.setValue(_this._time);
                 _this.showDate(null, types_1.ViewMode.calendar);
             });
-            _this._timepicker.events.on(ts_timepicker_1.TimepickerEvents.save, function () {
+            _this._timepicker.events.on(ts_timepicker_1.TimepickerEvents.apply, function () {
                 var _a = _this._timepicker.getValue(true), hour = _a.hour, minute = _a.minute, AM = _a.AM;
                 var oldDate = _this._getSelected();
                 var newDate = DateHelper_1.DateHelper.withHoursAndMinutes(_this._getSelected() || new Date(), hour, minute, AM);
@@ -4676,7 +4763,7 @@ var Calendar = /** @class */ (function (_super) {
     Calendar.prototype.getValue = function (asDateObject) {
         var _this = this;
         if (!this._selected[0]) {
-            return null;
+            return "";
         }
         if (this.config.range) {
             return asDateObject
@@ -4707,6 +4794,14 @@ var Calendar = /** @class */ (function (_super) {
             this._timepicker.destructor();
         }
         this.unmount();
+    };
+    Calendar.prototype.clear = function () {
+        if (this.config.timePicker) {
+            this._timepicker.clear();
+            this._time = this._timepicker.getValue();
+        }
+        this._selected = [];
+        this.showDate(null, this.config.mode);
     };
     Calendar.prototype.link = function (targetCalendar) {
         var _this = this;
@@ -4739,13 +4834,13 @@ var Calendar = /** @class */ (function (_super) {
         if (!this.config.$rangeMark || !this._linkedCalendar.config.$rangeMark) {
             this.config.$rangeMark = this._linkedCalendar.config.$rangeMark = rangeMark;
         }
-        if (!this.config.block || !this._linkedCalendar.config.block) {
-            this.config.block = function (date) {
+        if (!this.config.disabledDates || !this._linkedCalendar.config.disabledDates) {
+            this.config.disabledDates = function (date) {
                 if (upperDate) {
                     return date > upperDate;
                 }
             };
-            this._linkedCalendar.config.block = function (date) {
+            this._linkedCalendar.config.disabledDates = function (date) {
                 if (lowerDate) {
                     return date < lowerDate;
                 }
@@ -4767,7 +4862,7 @@ var Calendar = /** @class */ (function (_super) {
     Calendar.prototype._unlink = function () {
         if (this._linkedCalendar) {
             this.config.$rangeMark = this._linkedCalendar.config.$rangeMark = null;
-            this.config.block = this._linkedCalendar.config.block = null;
+            this.config.disabledDates = this._linkedCalendar.config.disabledDates = null;
             this.events.detach(types_1.CalendarEvents.change, "link");
             this._linkedCalendar.events.detach(types_1.CalendarEvents.change, "link");
             this._linkedCalendar.paint();
@@ -4842,7 +4937,7 @@ var Calendar = /** @class */ (function (_super) {
                             _this.events.fire(types_1.CalendarEvents.change, [date, oldDate, true]);
                             break;
                         case types_1.ViewMode.months:
-                            if (_this.config.view !== types_1.ViewMode.months) {
+                            if (_this.config.mode !== types_1.ViewMode.months) {
                                 DateHelper_1.DateHelper.setMonth(_this._currentDate, date);
                                 _this.showDate(null, types_1.ViewMode.calendar);
                                 _this.events.fire(types_1.CalendarEvents.monthSelected, [date]);
@@ -4860,7 +4955,7 @@ var Calendar = /** @class */ (function (_super) {
                             }
                             break;
                         case types_1.ViewMode.years:
-                            if (_this.config.view !== types_1.ViewMode.years) {
+                            if (_this.config.mode !== types_1.ViewMode.years) {
                                 DateHelper_1.DateHelper.setYear(_this._currentDate, date);
                                 _this.showDate(null, types_1.ViewMode.months);
                                 _this.events.fire(types_1.CalendarEvents.yearSelected, [date]);
@@ -4918,7 +5013,10 @@ var Calendar = /** @class */ (function (_super) {
                 }
             },
             onmouseover: {
-                ".dhx_calendar-day": function (e, vn) { return _this.events.fire(types_1.CalendarEvents.dateHover, [new Date(vn.attrs._date), e]); }
+                ".dhx_calendar-day": function (event, node) {
+                    _this.events.fire(types_1.CalendarEvents.dateMouseOver, [new Date(node.attrs._date), event]);
+                    _this.events.fire(types_1.CalendarEvents.dateHover, [new Date(node.attrs._date), event]); // TODO: remove sute_7.0
+                }
             }
         };
     };
@@ -4937,7 +5035,7 @@ var Calendar = /** @class */ (function (_super) {
             var _loop_1 = function () {
                 var isDateWeekEnd = DateHelper_1.DateHelper.isWeekEnd(currentDate);
                 var isCurrentMonth = date.getMonth() === currentDate.getMonth();
-                var isBlocked = this_1.config.block && this_1.config.block(currentDate);
+                var isBlocked = this_1.config.disabledDates && this_1.config.disabledDates(currentDate);
                 var css = [];
                 if (this_1.config.range && this_1._selected[0] && this_1._selected[1]) {
                     var rangeMark = function () {
@@ -5019,7 +5117,7 @@ var Calendar = /** @class */ (function (_super) {
         var date = this._currentDate;
         var _a = this.config, weekStart = _a.weekStart, thisMonthOnly = _a.thisMonthOnly, css = _a.css, timePicker = _a.timePicker, width = _a.width;
         var weekDays = weekStart === "monday"
-            ? en_1.default.daysShort.slice(1).concat([en_1.default.daysShort[0]]) : en_1.default.daysShort;
+            ? __spreadArrays(en_1.default.daysShort.slice(1), [en_1.default.daysShort[0]]) : en_1.default.daysShort;
         var weekDaysHeader = weekDays.map(function (day) { return dom_1.el(".dhx_calendar-weekday", day); });
         var data = this._getData(date);
         var content = [];
@@ -5071,7 +5169,7 @@ var Calendar = /** @class */ (function (_super) {
         var date = this._currentDate;
         var currentMonth = date.getMonth();
         var currentYear = this._getSelected() ? this._getSelected().getFullYear() : null;
-        var _a = this.config, css = _a.css, timePicker = _a.timePicker, weekNumbers = _a.weekNumbers, width = _a.width, view = _a.view;
+        var _a = this.config, css = _a.css, timePicker = _a.timePicker, weekNumbers = _a.weekNumbers, width = _a.width, mode = _a.mode;
         var widgetClass = "dhx_calendar dhx_widget" +
             (css ? " " + css : "") +
             (timePicker ? " dhx_calendar--with_timepicker" : "") +
@@ -5086,7 +5184,7 @@ var Calendar = /** @class */ (function (_super) {
                     tabIndex: 1,
                     _date: i
                 }, item); })),
-                view !== types_1.ViewMode.months ? dom_1.el(".dhx_calendar__actions", [
+                mode !== types_1.ViewMode.months ? dom_1.el(".dhx_calendar__actions", [
                     dom_1.el("button.dhx_button.dhx_button--color_primary.dhx_button--view_link.dhx_button--size_small.dhx_button--width_full.dhx_button--circle.dhx_calendar-action__cancel", en_1.default.cancel)
                 ]) : null
             ])
@@ -5096,7 +5194,7 @@ var Calendar = /** @class */ (function (_super) {
         var _this = this;
         var date = this._currentDate;
         var yearsDiapason = DateHelper_1.DateHelper.getTwelweYears(date);
-        var _a = this.config, css = _a.css, timePicker = _a.timePicker, weekNumbers = _a.weekNumbers, width = _a.width, view = _a.view;
+        var _a = this.config, css = _a.css, timePicker = _a.timePicker, weekNumbers = _a.weekNumbers, width = _a.width, mode = _a.mode;
         var widgetClass = "dhx_calendar dhx_widget" +
             (css ? " " + css : "") +
             (timePicker ? " dhx_calendar--with_timepicker" : "") +
@@ -5109,7 +5207,7 @@ var Calendar = /** @class */ (function (_super) {
                     _date: item,
                     tabIndex: 1,
                 }, item); })),
-                view !== types_1.ViewMode.years && view !== types_1.ViewMode.months ? dom_1.el(".dhx_calendar__actions", [
+                mode !== types_1.ViewMode.years && mode !== types_1.ViewMode.months ? dom_1.el(".dhx_calendar__actions", [
                     dom_1.el("button.dhx_button.dhx_button--color_primary.dhx_button--view_link.dhx_button--size_small.dhx_button--width_full.dhx_button--circle.dhx_calendar-action__cancel", en_1.default.cancel)
                 ]) : null
             ])
@@ -5200,24 +5298,26 @@ var Timepicker = /** @class */ (function (_super) {
         if (config === void 0) { config = {}; }
         var _this = _super.call(this, container, core_1.extend({
             timeFormat: 24,
-            actions: false
+            controls: false,
+            actions: false // TODO: remove sute_7.0
         }, config)) || this;
         _this.events = new events_1.EventSystem(_this);
         _this._time = {
-            h: 0,
-            m: 0,
-            isAM: true
+            hour: 0,
+            minute: 0,
+            AM: true
         };
         if (_this.config.timeFormat === 12) {
-            _this._time.h = 12;
+            _this._time.hour = 12;
         }
+        _this.config.controls = _this.config.controls || _this.config.actions; // TODO: remove sute_7.0
         _this._initUI(container);
         _this._initHandlers();
         _this._initEvents();
         return _this;
     }
     Timepicker.prototype.getValue = function (asOBject) {
-        var _a = this._time, h = _a.h, m = _a.m, isAM = _a.isAM;
+        var _a = this._time, h = _a.hour, m = _a.minute, isAM = _a.AM;
         if (asOBject) {
             var obj = {
                 hour: h,
@@ -5264,9 +5364,17 @@ var Timepicker = /** @class */ (function (_super) {
         if (helper_1.isTimeCheck(value)) {
             this._hoursSlider.setValue(0);
             this._minutesSlider.setValue(m);
-            this._time.isAM = true;
+            this._time.AM = true;
         }
         this._inputsView.paint();
+    };
+    Timepicker.prototype.clear = function () {
+        if (this.config.timeFormat === 24) {
+            this.setValue("00:00");
+        }
+        else {
+            this.setValue("12:00AM");
+        }
     };
     Timepicker.prototype.destructor = function () {
         this._minutesSlider.destructor();
@@ -5283,7 +5391,7 @@ var Timepicker = /** @class */ (function (_super) {
             gravity: false,
             css: "dhx_widget dhx_timepicker " +
                 (this.config.css ? this.config.css : "") +
-                (this.config.actions ? " dhx_timepicker--with-actions" : ""),
+                (this.config.controls ? " dhx_timepicker--with-controls" : ""),
             rows: [
                 {
                     id: "timepicker",
@@ -5299,7 +5407,7 @@ var Timepicker = /** @class */ (function (_super) {
                 }
             ]
         };
-        if (this.config.actions) {
+        if (this.config.controls) {
             layoutConfig.rows.unshift({
                 id: "close-action",
                 css: "dhx_timepicker__close"
@@ -5318,22 +5426,22 @@ var Timepicker = /** @class */ (function (_super) {
             min: 0,
             max: 59,
             step: 1,
-            thumbLabel: false,
-            labelInline: false,
+            tooltip: false,
+            labelPosition: "top",
             label: en_1.default.minutes
         });
         var hSlider = this._hoursSlider = new ts_slider_1.Slider(null, {
             min: 0,
             max: 23,
             step: 1,
-            thumbLabel: false,
-            labelInline: false,
+            tooltip: false,
+            labelPosition: "top",
             label: en_1.default.hours
         });
         layout.getCell("timepicker").attach(inputsView);
         layout.getCell("hour-slider").attach(hSlider);
         layout.getCell("minute-slider").attach(mSlider);
-        if (this.config.actions) {
+        if (this.config.controls) {
             var save = function () {
                 return dom_1.el("button.dhx_timepicker__button-save.dhx_button.dhx_button--view_flat.dhx_button--color_primary.dhx_button--size_medium.dhx_button--circle.dhx_button--width_full", { onclick: _this._outerHandlers.save }, en_1.default.save);
             };
@@ -5363,8 +5471,17 @@ var Timepicker = /** @class */ (function (_super) {
             }
         };
         this._outerHandlers = {
-            close: function () { return _this.events.fire(types_1.TimepickerEvents.close); },
-            save: function () { return _this.events.fire(types_1.TimepickerEvents.save, [_this._time]); }
+            close: function () {
+                if (!_this.events.fire(types_1.TimepickerEvents.beforeClose, [])) {
+                    return;
+                }
+                _this.events.fire(types_1.TimepickerEvents.afterClose, []);
+                _this.events.fire(types_1.TimepickerEvents.close, []); // TODO: remove sute_7.0
+            },
+            save: function () {
+                _this.events.fire(types_1.TimepickerEvents.apply, [_this._time]);
+                _this.events.fire(types_1.TimepickerEvents.save, [_this._time]); // TODO: remove sute_7.0
+            }
         };
     };
     Timepicker.prototype._initEvents = function () {
@@ -5374,11 +5491,11 @@ var Timepicker = /** @class */ (function (_super) {
                 return;
             }
             if (_this.config.timeFormat === 12) {
-                _this._time.isAM = value < 12;
-                _this._time.h = value % 12 || 12;
+                _this._time.AM = value < 12;
+                _this._time.hour = value % 12 || 12;
             }
             else {
-                _this._time.h = value;
+                _this._time.hour = value;
             }
             _this.events.fire(types_1.TimepickerEvents.change, [_this.getValue()]);
             _this._inputsView.paint();
@@ -5387,7 +5504,7 @@ var Timepicker = /** @class */ (function (_super) {
             if (value < _this._minutesSlider.config.min || value > _this._minutesSlider.config.max) {
                 return;
             }
-            _this._time.m = value;
+            _this._time.minute = value;
             _this.events.fire(types_1.TimepickerEvents.change, [_this.getValue()]);
             _this._inputsView.paint();
         });
@@ -5396,14 +5513,14 @@ var Timepicker = /** @class */ (function (_super) {
         return dom_1.el(".dhx_timepicker-inputs", __assign({}, this._handlers), [
             dom_1.el("input.dhx_timepicker-input.dhx_timepicker-input--hour", {
                 _key: "hour",
-                value: this._time.h < 10 ? "0" + this._time.h : this._time.h
+                value: this._time.hour < 10 ? "0" + this._time.hour : this._time.hour
             }),
             dom_1.el("span.dhx_timepicker-delimer", ":"),
             dom_1.el("input.dhx_timepicker-input.dhx_timepicker-input--minutes", {
                 _key: "minute",
-                value: this._time.m < 10 ? "0" + this._time.m : this._time.m
+                value: this._time.minute < 10 ? "0" + this._time.minute : this._time.minute
             }),
-            this.config.timeFormat === 12 ? dom_1.el(".dhx_timepicker-ampm", this._time.isAM ? "AM" : "PM") : null
+            this.config.timeFormat === 12 ? dom_1.el(".dhx_timepicker-ampm", this._time.AM ? "AM" : "PM") : null
         ]);
     };
     return Timepicker;
@@ -5462,6 +5579,10 @@ var Layout = /** @class */ (function (_super) {
         _this._root = _this.config.parent || _this;
         _this._all = {};
         _this._parseConfig();
+        if (_this.config.activeTab) {
+            _this.config.activeView = _this.config.activeTab;
+        }
+        // Need replace to tabbar
         if (_this.config.views) {
             _this.config.activeView = _this.config.activeView || _this._cells[0].id;
             _this._isViewLayout = true;
@@ -5534,6 +5655,26 @@ var Layout = /** @class */ (function (_super) {
     Layout.prototype.getCell = function (id) {
         return this._root._all[id];
     };
+    Layout.prototype.forEach = function (cb, parent, level) {
+        if (level === void 0) { level = Infinity; }
+        if (!this._haveCells(parent) || level < 1) {
+            return;
+        }
+        var array;
+        if (parent) {
+            array = this._root._all[parent]._cells;
+        }
+        else {
+            array = this._root._cells;
+        }
+        for (var index = 0; index < array.length; index++) {
+            var cell = array[index];
+            cb.call(this, cell, index, array);
+            if (this._haveCells(cell.id)) {
+                cell.forEach(cb, cell.id, --level);
+            }
+        }
+    };
     // TODO: remove sute_7.0
     Layout.prototype.cell = function (id) {
         return this.getCell(id);
@@ -5569,6 +5710,13 @@ var Layout = /** @class */ (function (_super) {
         // FIxME
         this._root._all[view.id] = view;
         return view;
+    };
+    Layout.prototype._haveCells = function (id) {
+        if (id) {
+            var array = this._root._all[id];
+            return array._cells && array._cells.length > 0;
+        }
+        return Object.keys(this._all).length > 0;
     };
     return Layout;
 }(Cell_1.Cell));
@@ -5615,7 +5763,8 @@ var events_1 = __webpack_require__(3);
 var Cell = /** @class */ (function (_super) {
     __extends(Cell, _super);
     function Cell(parent, config) {
-        var _this = _super.call(this, parent, core_1.extend({ gravity: true }, config)) || this;
+        var _this = _super.call(this, parent, core_1.extend({ gravity: true, collapsed: false }, config)) || this;
+        _this._disabled = [];
         var p = parent;
         if (p && p.isVisible) {
             _this._parent = p;
@@ -5626,7 +5775,9 @@ var Cell = /** @class */ (function (_super) {
         else {
             _this.events = new events_1.EventSystem(_this);
         }
-        _this.config.full = _this.config.full === undefined ? Boolean(_this.config.header || _this.config.collapsable) : _this.config.full;
+        _this.config.full = _this.config.full === undefined ? Boolean(_this.config.header ||
+            _this.config.collapsable || _this.config.headerHeight || _this.config.headerIcon || _this.config.headerImage)
+            : _this.config.full;
         _this._initHandlers();
         _this.id = _this.config.id || core_1.uid();
         return _this;
@@ -5683,6 +5834,30 @@ var Cell = /** @class */ (function (_super) {
         }
         this.paint();
         this.events.fire(types_1.LayoutEvents.afterHide, [this.id]);
+    };
+    Cell.prototype.expand = function () {
+        if (!this.events.fire(types_1.LayoutEvents.beforeExpand, [this.id])) {
+            return;
+        }
+        this.config.collapsed = false;
+        this.events.fire(types_1.LayoutEvents.afterExpand, [this.id]);
+        this.paint();
+    };
+    Cell.prototype.collapse = function () {
+        if (!this.events.fire(types_1.LayoutEvents.beforeCollapse, [this.id])) {
+            return;
+        }
+        this.config.collapsed = true;
+        this.events.fire(types_1.LayoutEvents.afterCollapse, [this.id]);
+        this.paint();
+    };
+    Cell.prototype.toggle = function () {
+        if (this.config.collapsed) {
+            this.expand();
+        }
+        else {
+            this.collapse();
+        }
     };
     Cell.prototype.getParent = function () {
         return this._parent;
@@ -5748,7 +5923,7 @@ var Cell = /** @class */ (function (_super) {
             }
         }
         var resizer = this.config.resizable && !this._isLastCell() && !this.config.collapsed ?
-            dom_1.el(".dhx_layout-resizer." + (this._isXDirection() ? "dhx_layout-resizer--x" : "dhx_layout-resizer--y"), __assign({}, this._resizerHandlers, { _ref: "resizer_" + this._uid }), [dom_1.el("span.dhx_layout-resizer__icon", {
+            dom_1.el(".dhx_layout-resizer." + (this._isXDirection() ? "dhx_layout-resizer--x" : "dhx_layout-resizer--y"), __assign(__assign({}, this._resizerHandlers), { _ref: "resizer_" + this._uid }), [dom_1.el("span.dhx_layout-resizer__icon", {
                     class: "dxi " + (this._isXDirection() ? "dxi-dots-vertical" : "dxi-dots-horizontal")
                 })]) : null;
         var handlers = {};
@@ -5757,7 +5932,7 @@ var Cell = /** @class */ (function (_super) {
                 handlers["on" + key] = this.config.on[key];
             }
         }
-        var cell = dom_1.el("div", __assign((_a = { _key: this._uid, style: this.config.full || this.config.html ? style : __assign({}, style, stylePadding), _ref: this._uid }, _a["aria-labelledby"] = this.config.id ? "tab-content-" + this.config.id : null, _a), handlers, { class: this._getCss(false) +
+        var cell = dom_1.el("div", __assign(__assign((_a = { _key: this._uid, style: this.config.full || this.config.html ? style : __assign(__assign({}, style), stylePadding), _ref: this._uid }, _a["aria-labelledby"] = this.config.id ? "tab-content-" + this.config.id : null, _a), handlers), { class: this._getCss(false) +
                 (this.config.css ? " " + this.config.css : "") +
                 (this.config.collapsed ? " dhx_layout-cell--collapsed" : "") +
                 (this.config.resizable ? " dhx_layout-cell--resizeble" : "") +
@@ -5770,10 +5945,13 @@ var Cell = /** @class */ (function (_super) {
                     (this.config.collapsable ? " dhx_layout-cell-header--collapseble" : "") +
                     (this.config.collapsed ? " dhx_layout-cell-header--collapsed" : "") +
                     (((this.getParent() || {}).config || {}).isAccordion ? " dhx_layout-cell-header--accordion" : ""),
-                onclick: this._handlers.collapse,
+                style: {
+                    height: this.config.headerHeight
+                },
+                onclick: this._handlers.toggle,
                 onkeydown: this._handlers.enterCollapse
             }, [
-                this.config.headerIcon && dom_1.el("span.dhx_layout-cell-header__icon" + this.config.headerIcon),
+                this.config.headerIcon && dom_1.el("span.dhx_layout-cell-header__icon", { class: this.config.headerIcon }),
                 this.config.headerImage && dom_1.el(".dhx_layout-cell-header__image-wrapper", [
                     dom_1.el("img", {
                         src: this.config.headerImage,
@@ -5781,12 +5959,16 @@ var Cell = /** @class */ (function (_super) {
                     })
                 ]),
                 this.config.header && dom_1.el("h3.dhx_layout-cell-header__title", this.config.header),
-                this.config.collapsable && dom_1.el("div.dhx_layout-cell-header__collapse-icon", {
-                    class: this._getCollapseIcon()
-                }),
+                this.config.collapsable
+                    ? dom_1.el("div.dhx_layout-cell-header__collapse-icon", {
+                        class: this._getCollapseIcon()
+                    })
+                    : dom_1.el("div.dhx_layout-cell-header__collapse-icon", {
+                        class: "dxi dxi-empty"
+                    })
             ]),
             !this.config.collapsed ? dom_1.el("div", {
-                "style": stylePadding,
+                "style": __assign(__assign({}, stylePadding), { height: "calc(100% - " + (this.config.headerHeight || 37) + "px)" }),
                 ".innerHTML": this.config.html,
                 "class": this._getCss(true) + " dhx_layout-cell-content",
             }, kids) : null
@@ -5809,19 +5991,26 @@ var Cell = /** @class */ (function (_super) {
         this._handlers = {
             enterCollapse: function (e) {
                 if (e.keyCode === 13) {
-                    _this._handlers.collapse();
+                    _this._handlers.toggle();
                 }
             },
             collapse: function () {
                 if (!_this.config.collapsable) {
                     return;
                 }
-                if (!_this.events.fire(types_1.LayoutEvents.beforeCollapse, [_this.id])) {
+                _this.collapse();
+            },
+            expand: function () {
+                if (!_this.config.collapsable) {
                     return;
                 }
-                _this.config.collapsed = !_this.config.collapsed;
-                _this.paint();
-                _this.events.fire(types_1.LayoutEvents.afterCollapse, [_this.id]);
+                _this.expand();
+            },
+            toggle: function () {
+                if (!_this.config.collapsable) {
+                    return;
+                }
+                _this.toggle();
             }
         };
         var blockOpts = {
@@ -5980,9 +6169,6 @@ var Cell = /** @class */ (function (_super) {
                 style.width = config.width;
             }
         }
-        // if (config.padding) {
-        // 	style.padding = config.padding;
-        // }
         return style;
     };
     return Cell;
@@ -6117,8 +6303,16 @@ var Slider = /** @class */ (function (_super) {
             min: 0,
             max: 100,
             step: 1,
-            thumbLabel: true,
+            tooltip: true
         }, config)) || this;
+        _this._disabled = false;
+        _this.config.helpMessage = _this.config.helpMessage || _this.config.help; // TODO: remove sute_7.0
+        if (_this.config.thumbLabel !== undefined) {
+            _this.config.tooltip = _this.config.thumbLabel; // TODO: remove sute_7.0
+        }
+        if (_this.config.labelInline) {
+            _this.config.labelPosition = "left"; // TODO: remove sute_7.0
+        }
         _this.events = new events_1.EventSystem(_this);
         _this._axis = _this.config.mode === types_1.Direction.horizontal ? "clientX" : "clientY";
         _this._initStartPosition();
@@ -6141,6 +6335,9 @@ var Slider = /** @class */ (function (_super) {
     Slider.prototype.enable = function () {
         this._disabled = false;
         this.paint();
+    };
+    Slider.prototype.isDisabled = function () {
+        return this._disabled;
     };
     Slider.prototype.focus = function (extra) {
         this.getRootView().refs[extra ? "extraRunner" : "runner"].el.focus();
@@ -6338,9 +6535,9 @@ var Slider = /** @class */ (function (_super) {
             document.removeEventListener("mouseup", mouseUp);
             document.removeEventListener("mousemove", mouseMove);
         };
-        if (this.config.help) {
+        if (this.config.helpMessage) {
             this._helper = new ts_popup_1.Popup({ css: "dhx_tooltip dhx_tooltip--forced dhx_tooltip--light" });
-            this._helper.attachHTML(this.config.help);
+            this._helper.attachHTML(this.config.helpMessage);
         }
         this._handlers = {
             showHelper: function (e) {
@@ -6472,8 +6669,8 @@ var Slider = /** @class */ (function (_super) {
         this.events.fire(types_1.SliderEvents.change, [newValue, oldValue, extra]);
     };
     Slider.prototype._getRunnerStyle = function (forExtra) {
-        if (forExtra === void 0) { forExtra = false; }
         var _a;
+        if (forExtra === void 0) { forExtra = false; }
         var direction = this.config.mode === types_1.Direction.horizontal ? "left" : "top";
         var pos = forExtra ? this._extraCurrentPosition : this._currentPosition;
         return _a = {},
@@ -6493,28 +6690,30 @@ var Slider = /** @class */ (function (_super) {
             (this._isNullable(forExtra ? this._extraCurrentPosition : this._currentPosition) && !this.config.range ? " dhx_slider__thumb--nullable" : "");
     };
     Slider.prototype._draw = function () {
-        var width = this.config.labelInline && this.config.labelWidth ? this.config.labelWidth : "";
+        var _a = this.config, labelPosition = _a.labelPosition, labelWidth = _a.labelWidth, mode = _a.mode, label = _a.label, hiddenLabel = _a.hiddenLabel, tick = _a.tick, majorTick = _a.majorTick, css = _a.css, helpMessage = _a.helpMessage;
+        var width = labelPosition === "left" && labelWidth ? labelWidth : "";
         return dom_1.el("div", {
             class: "dhx_slider" +
-                " dhx_slider--mode_" + this.config.mode +
-                (this.config.label && this.config.labelInline ? " dhx_slider--label-inline" : "") +
-                (this.config.hiddenLabel ? " dhx_slider--label_sr" : "") +
-                (this.config.tick ? " dhx_slider--ticks" : "") +
-                (this.config.majorTick ? " dhx_slider--major-ticks" : "") +
-                (this.config.css ? " " + this.config.css : "")
+                " dhx_slider--mode_" + mode +
+                (label && labelPosition === "left" ? " dhx_slider--label-inline" : "") +
+                (hiddenLabel ? " dhx_slider--label_sr" : "") +
+                (tick ? " dhx_slider--ticks" : "") +
+                (majorTick ? " dhx_slider--major-ticks" : "") +
+                (css ? " " + css : "") +
+                (this._disabled ? " dhx_slider--disabled" : "")
         }, [
-            this.config.label ? dom_1.el("label.dhx_label.dhx_slider__label", {
+            label ? dom_1.el("label.dhx_label.dhx_slider__label", {
                 style: { minWidth: width, maxWidth: width },
-                class: this.config.help ? "dhx_label--with-help" : "",
+                class: helpMessage ? "dhx_label--with-help" : "",
                 onclick: this._handlers.onlabelClick,
-            }, this.config.help ? [
-                dom_1.el("span.dhx_label__holder", this.config.label),
+            }, helpMessage ? [
+                dom_1.el("span.dhx_label__holder", label),
                 dom_1.el("span.dhx_label-help.dxi.dxi-help-circle-outline", {
                     tabindex: "0",
                     role: "button",
                     onclick: this._handlers.showHelper
                 }),
-            ] : this.config.label) : null,
+            ] : label) : null,
             this._drawSlider()
         ]);
     };
@@ -6541,8 +6740,8 @@ var Slider = /** @class */ (function (_super) {
                     style: this._getRunnerStyle(),
                     tabindex: 0,
                 }),
-                this.config.thumbLabel && (this._mouseIn || this._focusIn || this._isMouseMoving) ? this._drawThumbLabel() : null,
-                this.config.thumbLabel && this.config.range && (this._mouseIn || this._focusIn || this._isMouseMoving) ? this._drawThumbLabel(true) : null,
+                this.config.tooltip && (this._mouseIn || this._focusIn || this._isMouseMoving) ? this._drawTooltip() : null,
+                this.config.tooltip && this.config.range && (this._mouseIn || this._focusIn || this._isMouseMoving) ? this._drawTooltip(true) : null,
                 this.config.range ? dom_1.el("div", {
                     _ref: "extraRunner",
                     class: this._getRunnerCss(true),
@@ -6589,9 +6788,9 @@ var Slider = /** @class */ (function (_super) {
                 _c)
         });
     };
-    Slider.prototype._drawThumbLabel = function (forExtra) {
-        if (forExtra === void 0) { forExtra = false; }
+    Slider.prototype._drawTooltip = function (forExtra) {
         var _a;
+        if (forExtra === void 0) { forExtra = false; }
         var pos = forExtra ? this._extraCurrentPosition : this._currentPosition;
         var direction = this.config.mode === types_1.Direction.horizontal ? "left" : "top";
         var classNameModifiers = this.config.mode === types_1.Direction.horizontal ? ".dhx_slider__thumb-label--horizontal" : ".dhx_slider__thumb-label--vertical";
@@ -6932,10 +7131,12 @@ var CalendarEvents;
     CalendarEvents["change"] = "change";
     CalendarEvents["beforeChange"] = "beforechange";
     CalendarEvents["modeChange"] = "modeChange";
-    CalendarEvents["dateHover"] = "dateHover";
     CalendarEvents["monthSelected"] = "monthSelected";
     CalendarEvents["yearSelected"] = "yearSelected";
     CalendarEvents["cancelClick"] = "cancelClick";
+    CalendarEvents["dateMouseOver"] = "dateMouseOver";
+    // TODO: remove sute_7.0
+    CalendarEvents["dateHover"] = "dateHover";
 })(CalendarEvents = exports.CalendarEvents || (exports.CalendarEvents = {}));
 
 
