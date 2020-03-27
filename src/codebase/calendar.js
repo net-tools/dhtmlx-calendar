@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.4.1 GPL
+dhtmlxCalendar v.6.4.2 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -296,6 +296,11 @@ function compare(obj1, obj2) {
     return true;
 }
 exports.compare = compare;
+exports.isType = function (value) {
+    var regex = /^\[object (\S+?)\]$/;
+    var matches = Object.prototype.toString.call(value).match(regex) || [];
+    return (matches[1] || "undefined").toLowerCase();
+};
 
 
 /***/ }),
