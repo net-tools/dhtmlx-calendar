@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.4.4 GPL
+dhtmlxCalendar v.6.5.1 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
