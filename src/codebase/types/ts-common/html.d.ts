@@ -38,12 +38,7 @@ export interface IFitPositionConfig {
 export declare type IAlign = "left" | "center" | "right";
 export declare function isIE(): boolean;
 export declare function getRealPosition(node: HTMLElement): IFitPosition;
-export declare enum Position {
-    left = "left",
-    right = "right",
-    bottom = "bottom",
-    top = "top"
-}
+export declare type Position = "left" | "right" | "bottom" | "top";
 export declare function calculatePosition(pos: IFitPosition, config: IFitPositionConfig): {
     left: string;
     top: string;

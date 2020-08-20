@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.5.1 GPL
+dhtmlxCalendar v.6.5.2 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -440,13 +440,6 @@ function getRealPosition(node) {
     };
 }
 exports.getRealPosition = getRealPosition;
-var Position;
-(function (Position) {
-    Position["left"] = "left";
-    Position["right"] = "right";
-    Position["bottom"] = "bottom";
-    Position["top"] = "top";
-})(Position = exports.Position || (exports.Position = {}));
 function getWindowBorders() {
     return {
         rightBorder: window.pageXOffset + window.innerWidth,
@@ -485,7 +478,7 @@ function placeBottomOrTop(pos, config) {
     var top;
     var bottomDiff = bottomBorder - pos.bottom - config.height;
     var topDiff = pos.top - config.height;
-    if (config.mode === Position.bottom) {
+    if (config.mode === "bottom") {
         if (bottomDiff >= 0) {
             top = pos.bottom;
         }
@@ -504,7 +497,7 @@ function placeBottomOrTop(pos, config) {
     if (bottomDiff < 0 && topDiff < 0) {
         if (config.auto) {
             // eslint-disable-next-line @typescript-eslint/no-use-before-define
-            return placeRightOrLeft(pos, __assign(__assign({}, config), { mode: Position.right, auto: false }));
+            return placeRightOrLeft(pos, __assign(__assign({}, config), { mode: "right", auto: false }));
         }
         top = bottomDiff > topDiff ? pos.bottom : topDiff;
     }
@@ -532,7 +525,7 @@ function placeRightOrLeft(pos, config) {
     var top;
     var rightDiff = rightBorder - pos.right - config.width;
     var leftDiff = pos.left - config.width;
-    if (config.mode === Position.right) {
+    if (config.mode === "right") {
         if (rightDiff >= 0) {
             left = pos.right;
         }
@@ -550,7 +543,7 @@ function placeRightOrLeft(pos, config) {
     }
     if (leftDiff < 0 && rightDiff < 0) {
         if (config.auto) {
-            return placeBottomOrTop(pos, __assign(__assign({}, config), { mode: Position.bottom, auto: false }));
+            return placeBottomOrTop(pos, __assign(__assign({}, config), { mode: "bottom", auto: false }));
         }
         left = leftDiff > rightDiff ? leftDiff : pos.right;
     }
@@ -573,7 +566,7 @@ function placeRightOrLeft(pos, config) {
     return { left: left, top: top };
 }
 function calculatePosition(pos, config) {
-    var _a = config.mode === Position.bottom || config.mode === Position.top
+    var _a = config.mode === "bottom" || config.mode === "top"
         ? placeBottomOrTop(pos, config)
         : placeRightOrLeft(pos, config), left = _a.left, top = _a.top;
     return {
@@ -1344,11 +1337,6 @@ var PopupEvents;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var Direction;
-(function (Direction) {
-    Direction["vertical"] = "vertical";
-    Direction["horizontal"] = "horizontal";
-})(Direction = exports.Direction || (exports.Direction = {}));
 var SliderEvents;
 (function (SliderEvents) {
     SliderEvents["change"] = "change";
@@ -2889,31 +2877,31 @@ var Popup = /** @class */ (function (_super) {
             });
             return;
         }
-        var _b = html_1.fitPosition(node, __assign(__assign({ centering: true, mode: html_1.Position.bottom }, config), { width: width,
+        var _b = html_1.fitPosition(node, __assign(__assign({ centering: true, mode: "bottom" }, config), { width: width,
             height: height })), left = _b.left, top = _b.top;
         this._popup.style.left = left;
         this._popup.style.top = top;
         if (config.indent && config.indent !== 0) {
             switch (config.mode) {
-                case html_1.Position.top:
+                case "top":
                     this._popup.style.top =
                         parseInt(this._popup.style.top.slice(0, -2), null) -
                             parseInt(config.indent.toString(), null) +
                             "px";
                     break;
-                case html_1.Position.bottom:
+                case "bottom":
                     this._popup.style.top =
                         parseInt(this._popup.style.top.slice(0, -2), null) +
                             parseInt(config.indent.toString(), null) +
                             "px";
                     break;
-                case html_1.Position.left:
+                case "left":
                     this._popup.style.left =
                         parseInt(this._popup.style.left.slice(0, -2), null) -
                             parseInt(config.indent.toString(), null) +
                             "px";
                     break;
-                case html_1.Position.right:
+                case "right":
                     this._popup.style.left =
                         parseInt(this._popup.style.left.slice(0, -2), null) +
                             parseInt(config.indent.toString(), null) +
@@ -4994,14 +4982,14 @@ var Calendar = /** @class */ (function (_super) {
             _this._currentDate = new Date();
         }
         switch (_this.config.mode) {
-            case types_1.ViewMode.months:
-                _this._currentViewMode = types_1.ViewMode.months;
+            case "month":
+                _this._currentViewMode = "month";
                 break;
-            case types_1.ViewMode.years:
-                _this._currentViewMode = types_1.ViewMode.years;
+            case "year":
+                _this._currentViewMode = "year";
                 break;
             default:
-                _this._currentViewMode = types_1.ViewMode.calendar;
+                _this._currentViewMode = "calendar";
         }
         _this._initHandlers();
         if (_this.config.timePicker) {
@@ -5014,7 +5002,7 @@ var Calendar = /** @class */ (function (_super) {
             _this._time = _this._timepicker.getValue();
             _this._timepicker.events.on(ts_timepicker_1.TimepickerEvents.afterClose, function () {
                 _this._timepicker.setValue(_this._time);
-                _this.showDate(null, types_1.ViewMode.calendar);
+                _this.showDate(null, "calendar");
             });
             _this._timepicker.events.on(ts_timepicker_1.TimepickerEvents.apply, function () {
                 var _a = _this._timepicker.getValue(true), hour = _a.hour, minute = _a.minute, AM = _a.AM;
@@ -5025,7 +5013,7 @@ var Calendar = /** @class */ (function (_super) {
                     _this.events.fire(types_1.CalendarEvents.change, [newDate, oldDate, true]);
                 }
                 _this._time = _this._timepicker.getValue();
-                _this.showDate(null, types_1.ViewMode.calendar);
+                _this.showDate(null, "calendar");
             });
         }
         var render = function () { return _this._draw(); };
@@ -5190,17 +5178,17 @@ var Calendar = /** @class */ (function (_super) {
     };
     Calendar.prototype._draw = function () {
         switch (this._currentViewMode) {
-            case types_1.ViewMode.calendar:
-                this.events.fire(types_1.CalendarEvents.modeChange, [types_1.ViewMode.calendar]);
+            case "calendar":
+                this.events.fire(types_1.CalendarEvents.modeChange, ["calendar"]);
                 return this._drawCalendar();
-            case types_1.ViewMode.months:
-                this.events.fire(types_1.CalendarEvents.modeChange, [types_1.ViewMode.months]);
+            case "month":
+                this.events.fire(types_1.CalendarEvents.modeChange, ["month"]);
                 return this._drawMonthSelector();
-            case types_1.ViewMode.years:
-                this.events.fire(types_1.CalendarEvents.modeChange, [types_1.ViewMode.years]);
+            case "year":
+                this.events.fire(types_1.CalendarEvents.modeChange, ["year"]);
                 return this._drawYearSelector();
-            case types_1.ViewMode.timepicker:
-                this.events.fire(types_1.CalendarEvents.modeChange, [types_1.ViewMode.timepicker]);
+            case "timepicker":
+                this.events.fire(types_1.CalendarEvents.modeChange, ["timepicker"]);
                 return this._drawTimepicker();
         }
     };
@@ -5212,7 +5200,7 @@ var Calendar = /** @class */ (function (_super) {
                     var date = vn.attrs._date;
                     var oldDate = DateHelper_1.DateHelper.copy(_this._getSelected());
                     switch (_this._currentViewMode) {
-                        case types_1.ViewMode.calendar: {
+                        case "calendar": {
                             var mergedDate = _this.config.timePicker
                                 ? DateHelper_1.DateHelper.mergeHoursAndMinutes(date, _this._getSelected() || _this._currentDate)
                                 : date;
@@ -5232,10 +5220,10 @@ var Calendar = /** @class */ (function (_super) {
                             _this.events.fire(types_1.CalendarEvents.change, [date, oldDate, true]);
                             break;
                         }
-                        case types_1.ViewMode.months:
-                            if (_this.config.mode !== types_1.ViewMode.months) {
+                        case "month":
+                            if (_this.config.mode !== "month") {
                                 DateHelper_1.DateHelper.setMonth(_this._currentDate, date);
-                                _this.showDate(null, types_1.ViewMode.calendar);
+                                _this.showDate(null, "calendar");
                                 _this.events.fire(types_1.CalendarEvents.monthSelected, [date]);
                             }
                             else {
@@ -5250,10 +5238,10 @@ var Calendar = /** @class */ (function (_super) {
                                 _this.paint();
                             }
                             break;
-                        case types_1.ViewMode.years:
-                            if (_this.config.mode !== types_1.ViewMode.years) {
+                        case "year":
+                            if (_this.config.mode !== "year") {
                                 DateHelper_1.DateHelper.setYear(_this._currentDate, date);
-                                _this.showDate(null, types_1.ViewMode.months);
+                                _this.showDate(null, "month");
                                 _this.events.fire(types_1.CalendarEvents.yearSelected, [date]);
                             }
                             else {
@@ -5270,21 +5258,21 @@ var Calendar = /** @class */ (function (_super) {
                     }
                 },
                 ".dhx_calendar-action__cancel": function () {
-                    _this.showDate(_this._getSelected(), types_1.ViewMode.calendar);
+                    _this.showDate(_this._getSelected(), "calendar");
                     _this.events.fire(types_1.CalendarEvents.cancelClick, []);
                 },
-                ".dhx_calendar-action__show-month": function () { return _this.showDate(null, types_1.ViewMode.months); },
-                ".dhx_calendar-action__show-year": function () { return _this.showDate(null, types_1.ViewMode.years); },
+                ".dhx_calendar-action__show-month": function () { return _this.showDate(null, "month"); },
+                ".dhx_calendar-action__show-year": function () { return _this.showDate(null, "year"); },
                 ".dhx_calendar-action__next": function () {
                     var newDate;
                     switch (_this._currentViewMode) {
-                        case types_1.ViewMode.calendar:
+                        case "calendar":
                             newDate = DateHelper_1.DateHelper.addMonth(_this._currentDate, 1);
                             break;
-                        case types_1.ViewMode.months:
+                        case "month":
                             newDate = DateHelper_1.DateHelper.addYear(_this._currentDate, 1);
                             break;
-                        case types_1.ViewMode.years:
+                        case "year":
                             newDate = DateHelper_1.DateHelper.addYear(_this._currentDate, 12);
                     }
                     _this.showDate(newDate);
@@ -5292,19 +5280,19 @@ var Calendar = /** @class */ (function (_super) {
                 ".dhx_calendar-action__prev": function () {
                     var newDate;
                     switch (_this._currentViewMode) {
-                        case types_1.ViewMode.calendar:
+                        case "calendar":
                             newDate = DateHelper_1.DateHelper.addMonth(_this._currentDate, -1);
                             break;
-                        case types_1.ViewMode.months:
+                        case "month":
                             newDate = DateHelper_1.DateHelper.addYear(_this._currentDate, -1);
                             break;
-                        case types_1.ViewMode.years:
+                        case "year":
                             newDate = DateHelper_1.DateHelper.addYear(_this._currentDate, -12);
                     }
                     _this.showDate(newDate);
                 },
                 ".dhx_calendar-action__show-timepicker": function () {
-                    _this._currentViewMode = types_1.ViewMode.timepicker;
+                    _this._currentViewMode = "timepicker";
                     _this.paint();
                 },
             },
@@ -5490,7 +5478,7 @@ var Calendar = /** @class */ (function (_super) {
                         _date: i,
                     }, item);
                 })),
-                mode !== types_1.ViewMode.months
+                mode !== "month"
                     ? dom_1.el(".dhx_calendar__actions", [
                         dom_1.el("button.dhx_button.dhx_button--color_primary.dhx_button--view_link.dhx_button--size_small.dhx_button--width_full.dhx_button--circle.dhx_calendar-action__cancel", en_1.default.cancel),
                     ])
@@ -5520,7 +5508,7 @@ var Calendar = /** @class */ (function (_super) {
                         tabIndex: 1,
                     }, item);
                 })),
-                mode !== types_1.ViewMode.years && mode !== types_1.ViewMode.months
+                mode !== "year" && mode !== "month"
                     ? dom_1.el(".dhx_calendar__actions", [
                         dom_1.el("button.dhx_button.dhx_button--color_primary.dhx_button--view_link.dhx_button--size_small.dhx_button--width_full.dhx_button--circle.dhx_calendar-action__cancel", en_1.default.cancel),
                     ])
@@ -6450,7 +6438,8 @@ var Cell = /** @class */ (function (_super) {
                 if (blockOpts.mode === types_1.resizeMode.percents) {
                     var field = blockOpts.xLayout ? "width" : "height";
                     blockOpts.percentsum =
-                        parseFloat(_this.config[field]) + parseFloat(nextCell.config[field]);
+                        parseFloat(_this.config[field]) +
+                            parseFloat(nextCell.config[field]);
                 }
                 if (blockOpts.mode === types_1.resizeMode.mixedperc1) {
                     var field = blockOpts.xLayout ? "width" : "height";
@@ -6652,7 +6641,7 @@ var Slider = /** @class */ (function (_super) {
     __extends(Slider, _super);
     function Slider(container, config) {
         var _this = _super.call(this, container, core_1.extend({
-            mode: types_1.Direction.horizontal,
+            mode: "horizontal",
             min: 0,
             max: 100,
             step: 1,
@@ -6667,7 +6656,7 @@ var Slider = /** @class */ (function (_super) {
             _this.config.labelPosition = "left"; // TODO: remove sute_7.0
         }
         _this.events = new events_1.EventSystem(_this);
-        _this._axis = _this.config.mode === types_1.Direction.horizontal ? "clientX" : "clientY";
+        _this._axis = _this.config.mode === "horizontal" ? "clientX" : "clientY";
         _this._initStartPosition();
         _this._initHotkeys();
         var vNode = dom_1.create({
@@ -6743,7 +6732,7 @@ var Slider = /** @class */ (function (_super) {
             left: rect.left + window.pageXOffset,
             top: rect.top + window.pageYOffset,
         };
-        this._length = this.config.mode === types_1.Direction.horizontal ? rect.width : rect.height;
+        this._length = this.config.mode === "horizontal" ? rect.width : rect.height;
     };
     Slider.prototype._initHotkeys = function () {
         var _this = this;
@@ -6764,28 +6753,28 @@ var Slider = /** @class */ (function (_super) {
         };
         this._hotkeysDestructor = Keymanager_1.addHotkeys({
             arrowleft: function (e) {
-                if (_this.config.mode === types_1.Direction.vertical) {
+                if (_this.config.mode === "vertical") {
                     return;
                 }
                 e.preventDefault();
                 _this._move(-_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
             },
             arrowright: function (e) {
-                if (_this.config.mode === types_1.Direction.vertical) {
+                if (_this.config.mode === "vertical") {
                     return;
                 }
                 e.preventDefault();
                 _this._move(_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
             },
             arrowup: function (e) {
-                if (_this.config.mode === types_1.Direction.horizontal) {
+                if (_this.config.mode === "horizontal") {
                     return;
                 }
                 e.preventDefault();
                 _this._move(_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
             },
             arrowdown: function (e) {
-                if (_this.config.mode === types_1.Direction.horizontal) {
+                if (_this.config.mode === "horizontal") {
                     return;
                 }
                 e.preventDefault();
@@ -6987,7 +6976,7 @@ var Slider = /** @class */ (function (_super) {
         };
     };
     Slider.prototype._getBegining = function () {
-        return this.config.mode === types_1.Direction.horizontal
+        return this.config.mode === "horizontal"
             ? this._offsets.left - window.pageXOffset
             : this._offsets.top - window.pageYOffset;
     };
@@ -7031,15 +7020,15 @@ var Slider = /** @class */ (function (_super) {
     Slider.prototype._getRunnerStyle = function (forExtra) {
         var _a;
         if (forExtra === void 0) { forExtra = false; }
-        var direction = this.config.mode === types_1.Direction.horizontal ? "left" : "top";
+        var direction = this.config.mode === "horizontal" ? "left" : "top";
         var pos = forExtra ? this._extraCurrentPosition : this._currentPosition;
         return _a = {},
             _a[direction] = pos + "%",
             _a;
     };
     Slider.prototype._isInverse = function () {
-        return ((this.config.inverse && this.config.mode === types_1.Direction.horizontal) ||
-            (!this.config.inverse && this.config.mode === types_1.Direction.vertical));
+        return ((this.config.inverse && this.config.mode === "horizontal") ||
+            (!this.config.inverse && this.config.mode === "vertical"));
     };
     Slider.prototype._getRunnerCss = function (forExtra) {
         if (forExtra === void 0) { forExtra = false; }
@@ -7139,8 +7128,8 @@ var Slider = /** @class */ (function (_super) {
         if (this._disabled) {
             return dom_1.el(".dhx_slider__range");
         }
-        var direction = this.config.mode === types_1.Direction.horizontal ? "left" : "top";
-        var size = this.config.mode === types_1.Direction.horizontal ? "width" : "height";
+        var direction = this.config.mode === "horizontal" ? "left" : "top";
+        var size = this.config.mode === "horizontal" ? "width" : "height";
         if (this.config.range) {
             var _d = this._currentPosition > this._extraCurrentPosition
                 ? [this._currentPosition, this._extraCurrentPosition]
@@ -7171,8 +7160,8 @@ var Slider = /** @class */ (function (_super) {
         var _a;
         if (forExtra === void 0) { forExtra = false; }
         var pos = forExtra ? this._extraCurrentPosition : this._currentPosition;
-        var direction = this.config.mode === types_1.Direction.horizontal ? "left" : "top";
-        var classNameModifiers = this.config.mode === types_1.Direction.horizontal
+        var direction = this.config.mode === "horizontal" ? "left" : "top";
+        var classNameModifiers = this.config.mode === "horizontal"
             ? ".dhx_slider__thumb-label--horizontal"
             : ".dhx_slider__thumb-label--vertical";
         if ((forExtra && this._isExtraActive) || (!forExtra && !this._isExtraActive)) {
@@ -7213,7 +7202,7 @@ var Slider = /** @class */ (function (_super) {
         return positions;
     };
     Slider.prototype._drawTicks = function () {
-        var direction = this.config.mode === types_1.Direction.horizontal ? "left" : "top";
+        var direction = this.config.mode === "horizontal" ? "left" : "top";
         return dom_1.el(".dhx_slider__ticks-holder", this._getTicks().map(function (tick) {
             var _a;
             return dom_1.el("div", {
@@ -7503,13 +7492,6 @@ exports.linkButtonClasses = ".dhx_button.dhx_button--view_link.dhx_button--icon.
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var ViewMode;
-(function (ViewMode) {
-    ViewMode["calendar"] = "calendar";
-    ViewMode["years"] = "year";
-    ViewMode["months"] = "month";
-    ViewMode["timepicker"] = "timepicker";
-})(ViewMode = exports.ViewMode || (exports.ViewMode = {}));
 var CalendarEvents;
 (function (CalendarEvents) {
     CalendarEvents["change"] = "change";

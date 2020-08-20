@@ -27,12 +27,7 @@ export interface ICalendar {
     getCurrentMode(): ViewMode;
     link(calendar: ICalendar): void;
 }
-export declare enum ViewMode {
-    calendar = "calendar",
-    years = "year",
-    months = "month",
-    timepicker = "timepicker"
-}
+export declare type ViewMode = "calendar" | "year" | "month" | "timepicker";
 export interface ICalendarDay {
     css: string;
     date: Date;

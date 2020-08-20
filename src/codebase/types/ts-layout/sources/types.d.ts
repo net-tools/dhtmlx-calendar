@@ -12,8 +12,8 @@ export interface ICellConfig {
     on?: {
         [key: string]: any;
     };
-    width?: string;
-    height?: string;
+    width?: string | number;
+    height?: string | number;
     gravity?: boolean;
     css?: string;
     padding?: string | number;

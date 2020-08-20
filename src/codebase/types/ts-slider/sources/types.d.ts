@@ -1,7 +1,4 @@
-export declare enum Direction {
-    vertical = "vertical",
-    horizontal = "horizontal"
-}
+export declare type Direction = "vertical" | "horizontal";
 export interface ISlider {
     config: ISliderConfig;
     paint(): void;
