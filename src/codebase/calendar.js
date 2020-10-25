@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.5.2 GPL
+dhtmlxCalendar v.6.5.8 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -1622,7 +1622,7 @@ function stringToDate(str, format, validate) {
             dateFormat = datePart.value;
         }
     }
-    var date = new Date();
+    var date = new Date(0);
     for (var _b = 0, dateParts_2 = dateParts; _b < dateParts_2.length; _b++) {
         var datePart = dateParts_2[_b];
         if (setFormatters[datePart.formatter]) {
@@ -1778,7 +1778,6 @@ if (!Array.prototype.find) {
 /* 20 */
 /***/ (function(module, exports) {
 
-/* eslint-disable @typescript-eslint/unbound-method */
 if (!String.prototype.includes) {
     String.prototype.includes = function (search, start) {
         "use strict";
@@ -1803,6 +1802,22 @@ if (!String.prototype.startsWith) {
             return this.indexOf(searchString, position) === position;
         },
     });
+}
+if (!String.prototype.padStart) {
+    String.prototype.padStart = function padStart(targetLength, padString) {
+        targetLength = targetLength >> 0;
+        padString = String(padString || " ");
+        if (this.length > targetLength) {
+            return String(this);
+        }
+        else {
+            targetLength = targetLength - this.length;
+            if (targetLength > padString.length) {
+                padString += padString.repeat(targetLength / padString.length);
+            }
+            return padString.slice(0, targetLength) + String(this);
+        }
+    };
 }
 
 
@@ -2782,12 +2797,15 @@ var Popup = /** @class */ (function (_super) {
         if (attached) {
             this.attach(attached);
         }
-        this._popup.style.left = "0";
-        this._popup.style.top = "0";
-        document.body.appendChild(this._popup);
-        this._setPopupSize(node, config);
-        this._isActive = true;
-        dom_1.awaitRedraw().then(function () {
+        dom_1.awaitRedraw()
+            .then(function () {
+            _this._setPopupSize(node, config);
+            _this._popup.style.position = "fixed";
+            document.body.appendChild(_this._popup);
+            _this._isActive = true;
+        })
+            .then(function () {
+            _this._popup.style.position = "absolute";
             _this.events.fire(types_1.PopupEvents.afterShow, [node]);
             _this._outerClickDestructor = _this._detectOuterClick(node);
         });
@@ -6719,6 +6737,8 @@ var Slider = /** @class */ (function (_super) {
     };
     Slider.prototype.destructor = function () {
         this._hotkeysDestructor();
+        document.body.contains(this._tooltip) && document.body.removeChild(this._tooltip);
+        this._tooltip = null;
         this.unmount();
     };
     Slider.prototype._calcSliderPosition = function () {
@@ -7046,6 +7066,9 @@ var Slider = /** @class */ (function (_super) {
     Slider.prototype._draw = function () {
         var _a = this.config, labelPosition = _a.labelPosition, labelWidth = _a.labelWidth, mode = _a.mode, label = _a.label, hiddenLabel = _a.hiddenLabel, tick = _a.tick, majorTick = _a.majorTick, css = _a.css, helpMessage = _a.helpMessage;
         var width = labelPosition === "left" && labelWidth ? labelWidth : "";
+        if (this._tooltip && (!this._mouseIn || !this._focusIn || !this._isMouseMoving)) {
+            document.body.contains(this._tooltip) && document.body.removeChild(this._tooltip);
+        }
         return dom_1.el("div", {
             class: "dhx_slider" +
                 " dhx_slider--mode_" +
@@ -7157,22 +7180,22 @@ var Slider = /** @class */ (function (_super) {
         });
     };
     Slider.prototype._drawTooltip = function (forExtra) {
-        var _a;
         if (forExtra === void 0) { forExtra = false; }
         var pos = forExtra ? this._extraCurrentPosition : this._currentPosition;
         var direction = this.config.mode === "horizontal" ? "left" : "top";
-        var classNameModifiers = this.config.mode === "horizontal"
-            ? ".dhx_slider__thumb-label--horizontal"
-            : ".dhx_slider__thumb-label--vertical";
+        var classNameModifiers = "";
         if ((forExtra && this._isExtraActive) || (!forExtra && !this._isExtraActive)) {
-            classNameModifiers += ".dhx_slider__thumb-label--active";
+            classNameModifiers += " dhx_slider__thumb-label--active";
         }
-        var style = (_a = {},
-            _a[direction] = pos + "%",
-            _a);
-        return dom_1.el(".dhx_slider__thumb-label" + classNameModifiers, {
-            style: style,
-        }, this._getValue(pos));
+        if (!this._tooltip) {
+            this._tooltip = document.createElement("div");
+        }
+        var coords = this.getRootView().refs.runner.el.getBoundingClientRect();
+        this._tooltip.className = "dhx_slider__thumb-label" + classNameModifiers;
+        this._tooltip.style.left = coords.x + (direction === "left" ? 6 : -30) + window.pageXOffset + "px";
+        this._tooltip.style.top = coords.y + (direction === "left" ? -30 : 6) + window.pageYOffset + "px";
+        this._tooltip.innerText = this._getValue(pos).toString();
+        document.body.appendChild(this._tooltip);
     };
     Slider.prototype._getTicks = function () {
         var _a = this.config, max = _a.max, min = _a.min, step = _a.step, tick = _a.tick, majorTick = _a.majorTick;
