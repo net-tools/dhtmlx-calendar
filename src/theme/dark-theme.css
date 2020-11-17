@@ -49,5 +49,8 @@ color: navajowhite;
 
 .dhx_button--view_link.dhx_button--color_primary:focus, .dhx_button--view_link.dhx_button--color_primary:hover {
 background-color: lightslategray;
-color: black;
+}
+
+.dhx_button--color_secondary:hover, .dhx_button--view_link:hover {
+background-color: lightslategray;
 }
