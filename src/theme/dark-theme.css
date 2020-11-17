@@ -51,6 +51,6 @@ color: navajowhite;
 background-color: lightslategray;
 }
 
-.dhx_button--color_secondary:hover, .dhx_button--view_link:hover {
-background-color: lightslategray;
+.dhx_calendar__navigation .dhx_button--color_secondary:hover, .dhx_calendar__navigation .dhx_button--view_link:hover {
+background-color: lightslategray;	
 }
