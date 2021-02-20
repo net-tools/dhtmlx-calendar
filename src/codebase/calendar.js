@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.5.8 GPL
+dhtmlxCalendar v.7.1.0 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -102,7 +102,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 17);
+/******/ 	return __webpack_require__(__webpack_require__.s = 16);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -111,6 +111,17 @@ return /******/ (function(modules) { // webpackBootstrap
 
 "use strict";
 
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var html_1 = __webpack_require__(1);
 var counter = new Date().valueOf();
@@ -169,6 +180,8 @@ function findIndex(arr, predicate) {
 }
 exports.findIndex = findIndex;
 function isEqualString(from, to) {
+    from = from.toString();
+    to = to.toString();
     if (from.length > to.length) {
         return false;
     }
@@ -314,6 +327,40 @@ exports.isEmptyObj = function (obj) {
     }
     return true;
 };
+exports.getMaxArrayNymber = function (array) {
+    if (!array.length)
+        return;
+    var maxNumber = -Infinity;
+    var index = 0;
+    var length = array.length;
+    for (index; index < length; index++) {
+        if (array[index] > maxNumber)
+            maxNumber = array[index];
+    }
+    return maxNumber;
+};
+exports.getMinArrayNymber = function (array) {
+    if (!array.length)
+        return;
+    var minNumber = +Infinity;
+    var index = 0;
+    var length = array.length;
+    for (index; index < length; index++) {
+        if (array[index] < minNumber)
+            minNumber = array[index];
+    }
+    return minNumber;
+};
+exports.getStringWidth = function (value, config) {
+    config = __assign({ font: "normal 14px Roboto", lineHeight: 20 }, config);
+    var canvas = document.createElement("canvas");
+    var ctx = canvas.getContext("2d");
+    if (config.font)
+        ctx.font = config.font;
+    var width = ctx.measureText(value).width;
+    canvas.remove();
+    return width;
+};
 
 
 /***/ }),
@@ -340,23 +387,30 @@ function toNode(node) {
         : node || document.body;
 }
 exports.toNode = toNode;
-function eventHandler(prepare, hash) {
+function eventHandler(prepare, hash, afterCall) {
     var keys = Object.keys(hash);
     return function (ev) {
         var data = prepare(ev);
-        var node = ev.target;
-        while (node) {
-            var cssstring = node.getAttribute ? node.getAttribute("class") || "" : "";
-            if (cssstring.length) {
-                var css = cssstring.split(" ");
-                for (var j = 0; j < keys.length; j++) {
-                    if (css.includes(keys[j])) {
-                        return hash[keys[j]](ev, data);
+        if (data !== undefined) {
+            var node = ev.target;
+            outer_block: while (node) {
+                var cssstring = node.getAttribute ? node.getAttribute("class") || "" : "";
+                if (cssstring.length) {
+                    var css = cssstring.split(" ");
+                    for (var j = 0; j < keys.length; j++) {
+                        if (css.includes(keys[j])) {
+                            if (hash[keys[j]](ev, data) === false)
+                                return false;
+                            else
+                                break outer_block;
+                        }
                     }
                 }
+                node = node.parentNode;
             }
-            node = node.parentNode;
         }
+        if (afterCall)
+            afterCall(ev);
         return true;
     };
 }
@@ -582,13 +636,7 @@ function fitPosition(node, config) {
 }
 exports.fitPosition = fitPosition;
 function getStrSize(str, textStyle) {
-    if (textStyle === void 0) { textStyle = {
-        fontSize: "14px",
-        fontFamily: "Arial",
-        lineHeight: "14px",
-        fontWeight: "normal",
-        fontStyle: "normal",
-    }; }
+    textStyle = __assign({ fontSize: "14px", fontFamily: "Arial", lineHeight: "14px", fontWeight: "normal", fontStyle: "normal" }, textStyle);
     var span = document.createElement("span");
     var fontSize = textStyle.fontSize, fontFamily = textStyle.fontFamily, lineHeight = textStyle.lineHeight, fontWeight = textStyle.fontWeight, fontStyle = textStyle.fontStyle;
     span.style.fontSize = fontSize;
@@ -759,8 +807,8 @@ var core_1 = __webpack_require__(0);
 var html_1 = __webpack_require__(1);
 var View = /** @class */ (function () {
     function View(_container, config) {
-        this._uid = core_1.uid();
         this.config = config || {};
+        this._uid = this.config.rootId || core_1.uid();
     }
     View.prototype.mount = function (container, vnode) {
         if (vnode) {
@@ -1206,19 +1254,23 @@ var MessageContainerPosition;
 /* 8 */
 /***/ (function(module, exports) {
 
+"use strict";
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var g;
 
 // This works in non-strict mode
-g = (function() {
+g = function () {
 	return this;
-})();
+}();
 
 try {
 	// This works if eval is allowed (see CSP)
 	g = g || new Function("return this")();
 } catch (e) {
 	// This works if the window reference is available
-	if (typeof window === "object") g = window;
+	if ((typeof window === "undefined" ? "undefined" : _typeof(window)) === "object") g = window;
 }
 
 // g can still be undefined, but nothing to do about it...
@@ -1227,39 +1279,8 @@ try {
 
 module.exports = g;
 
-
 /***/ }),
 /* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var locale = {
-    monthsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-    months: [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-    ],
-    daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-    days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Monday"],
-    cancel: "Cancel",
-};
-exports.default = locale;
-
-
-/***/ }),
-/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1273,7 +1294,7 @@ exports.default = locale;
 
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1300,7 +1321,7 @@ exports.blockScreen = blockScreen;
 
 
 /***/ }),
-/* 12 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1310,11 +1331,11 @@ function __export(m) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(__webpack_require__(32));
-__export(__webpack_require__(13));
+__export(__webpack_require__(12));
 
 
 /***/ }),
-/* 13 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1331,7 +1352,7 @@ var PopupEvents;
 
 
 /***/ }),
-/* 14 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1346,7 +1367,7 @@ var SliderEvents;
 
 
 /***/ }),
-/* 15 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1355,24 +1376,48 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var TimepickerEvents;
 (function (TimepickerEvents) {
     TimepickerEvents["change"] = "change";
-    TimepickerEvents["apply"] = "apply";
+    TimepickerEvents["beforeApply"] = "beforeApply";
+    TimepickerEvents["afterApply"] = "afterApply";
     TimepickerEvents["beforeClose"] = "beforeClose";
     TimepickerEvents["afterClose"] = "afterClose";
-    // TODO: remove sute_7.0
+    /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
+    TimepickerEvents["apply"] = "apply";
+    /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
     TimepickerEvents["close"] = "close";
+    /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
     TimepickerEvents["save"] = "save";
 })(TimepickerEvents = exports.TimepickerEvents || (exports.TimepickerEvents = {}));
 
 
 /***/ }),
-/* 16 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var en_1 = __webpack_require__(9);
 var core_1 = __webpack_require__(0);
+var core_2 = __webpack_require__(0);
+exports.locale = {
+    monthsShort: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    months: [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ],
+    daysShort: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+    days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Monday"],
+    cancel: "Cancel",
+};
 /*
     %d	day as a number with leading zero, 01..31
     %j	day as a number, 1..31
@@ -1393,7 +1438,6 @@ var core_1 = __webpack_require__(0);
     %a	am or pm
     %A	AM or PM
     %u	milliseconds
-    %P	timezone offset
 */
 var formatters = {
     "%d": function (date) {
@@ -1402,18 +1446,18 @@ var formatters = {
     },
     "%j": function (date) { return date.getDate(); },
     "%l": function (date) {
-        return en_1.default.days[date.getDay()];
+        return exports.locale.days[date.getDay()];
     },
     "%D": function (date) {
-        return en_1.default.daysShort[date.getDay()];
+        return exports.locale.daysShort[date.getDay()];
     },
     "%m": function (date) {
         var month = date.getMonth() + 1;
         return month < 10 ? "0" + month : month;
     },
     "%n": function (date) { return date.getMonth() + 1; },
-    "%M": function (date) { return en_1.default.monthsShort[date.getMonth()]; },
-    "%F": function (date) { return en_1.default.months[date.getMonth()]; },
+    "%M": function (date) { return exports.locale.monthsShort[date.getMonth()]; },
+    "%F": function (date) { return exports.locale.months[date.getMonth()]; },
     "%y": function (date) {
         return date
             .getFullYear()
@@ -1474,11 +1518,11 @@ var setFormatters = {
         check ? date.setMonth(Number(value) - 1) : date.setMonth(Number(0));
     },
     "%M": function (date, value) {
-        var index = core_1.findIndex(en_1.default.monthsShort, function (v) { return v === value; });
+        var index = core_2.findIndex(exports.locale.monthsShort, function (v) { return v === value; });
         index === -1 ? date.setMonth(0) : date.setMonth(index);
     },
     "%F": function (date, value) {
-        var index = core_1.findIndex(en_1.default.months, function (v) { return v === value; });
+        var index = core_2.findIndex(exports.locale.months, function (v) { return v === value; });
         index === -1 ? date.setMonth(0) : date.setMonth(index);
     },
     "%y": function (date, value) {
@@ -1563,7 +1607,7 @@ function tokenizeFormat(format) {
     }
     return tokens;
 }
-function getFormatedDate(format, date) {
+function getFormattedDate(format, date) {
     return tokenizeFormat(format).reduce(function (res, token) {
         if (token.type === TokenType.separator) {
             return res + token.value;
@@ -1576,7 +1620,7 @@ function getFormatedDate(format, date) {
         }
     }, "");
 }
-exports.getFormatedDate = getFormatedDate;
+exports.getFormattedDate = getFormattedDate;
 function stringToDate(str, format, validate) {
     if (typeof str !== "string") {
         return;
@@ -1632,12 +1676,103 @@ function stringToDate(str, format, validate) {
     return validate ? true : date;
 }
 exports.stringToDate = stringToDate;
+var DateHelper = /** @class */ (function () {
+    function DateHelper() {
+    }
+    DateHelper.copy = function (d) {
+        return new Date(d);
+    };
+    DateHelper.fromYear = function (year) {
+        return new Date(year, 0, 1);
+    };
+    DateHelper.fromYearAndMonth = function (year, month) {
+        return new Date(year, month, 1);
+    };
+    DateHelper.weekStart = function (d, firstWeekday) {
+        var diff = (d.getDay() + 7 - firstWeekday) % 7;
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate() - diff);
+    };
+    DateHelper.monthStart = function (d) {
+        return new Date(d.getFullYear(), d.getMonth(), 1);
+    };
+    DateHelper.yearStart = function (d) {
+        return new Date(d.getFullYear(), 0, 1);
+    };
+    DateHelper.dayStart = function (d) {
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    };
+    DateHelper.addDay = function (d, count) {
+        if (count === void 0) { count = 1; }
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate() + count);
+    };
+    DateHelper.addMonth = function (d, count) {
+        if (count === void 0) { count = 1; }
+        return new Date(d.getFullYear(), d.getMonth() + count);
+    };
+    DateHelper.addYear = function (d, count) {
+        if (count === void 0) { count = 1; }
+        return new Date(d.getFullYear() + count, d.getMonth());
+    };
+    DateHelper.withHoursAndMinutes = function (d, hours, minutes, dateFormat) {
+        if (dateFormat === undefined || (!dateFormat && hours === 12) || (dateFormat && hours !== 12)) {
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hours, minutes);
+        }
+        else if (dateFormat && hours === 12) {
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, minutes);
+        }
+        else {
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hours + 12, minutes);
+        }
+    };
+    DateHelper.setMonth = function (d, month) {
+        d.setMonth(month);
+    };
+    DateHelper.setYear = function (d, year) {
+        d.setFullYear(year);
+    };
+    DateHelper.mergeHoursAndMinutes = function (source, target) {
+        return new Date(source.getFullYear(), source.getMonth(), source.getDate(), target.getHours(), target.getMinutes());
+    };
+    DateHelper.isWeekEnd = function (d) {
+        return d.getDay() === 0 || d.getDay() === 6;
+    };
+    DateHelper.getTwelweYears = function (d) {
+        var y = d.getFullYear();
+        var firstYear = y - (y % 12);
+        return core_1.range(firstYear, firstYear + 11);
+    };
+    DateHelper.getWeekNumber = function (d) {
+        if (d.getDay() !== 6) {
+            d = DateHelper.addDay(d, 6 - d.getDay());
+        }
+        var dayMS = 24 * 60 * 60 * 1000;
+        var ordinal = (d.valueOf() - DateHelper.yearStart(d).valueOf()) / dayMS;
+        return Math.floor((ordinal - d.getDay() + 10) / 7);
+    };
+    DateHelper.isSameDay = function (d1, d2) {
+        return (d1.getFullYear() === d2.getFullYear() &&
+            d1.getMonth() === d2.getMonth() &&
+            d1.getDate() === d2.getDate());
+    };
+    DateHelper.toDateObject = function (date, dateFormat) {
+        if (typeof date === "string") {
+            return stringToDate(date, dateFormat);
+        }
+        else {
+            return new Date(date);
+        }
+    };
+    DateHelper.nullTimestampDate = new Date(0);
+    return DateHelper;
+}());
+exports.DateHelper = DateHelper;
 
 
 /***/ }),
-/* 17 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
+__webpack_require__(17);
 __webpack_require__(18);
 __webpack_require__(19);
 __webpack_require__(20);
@@ -1646,7 +1781,7 @@ module.exports = __webpack_require__(22);
 
 
 /***/ }),
-/* 18 */
+/* 17 */
 /***/ (function(module, exports) {
 
 Object.values = Object.values
@@ -1684,7 +1819,7 @@ Object.values = Object.values
 
 
 /***/ }),
-/* 19 */
+/* 18 */
 /***/ (function(module, exports) {
 
 /* eslint-disable prefer-rest-params */
@@ -1772,10 +1907,31 @@ if (!Array.prototype.find) {
         writable: true,
     });
 }
+if (!Array.prototype.findIndex) {
+    Array.prototype.findIndex = function (predicate) {
+        if (this == null) {
+            throw new TypeError("Array.prototype.findIndex called on null or undefined");
+        }
+        if (typeof predicate !== "function") {
+            throw new TypeError("predicate must be a function");
+        }
+        var list = Object(this);
+        var length = list.length >>> 0;
+        var thisArg = arguments[1];
+        var value;
+        for (var i = 0; i < length; i++) {
+            value = list[i];
+            if (predicate.call(thisArg, value, i, list)) {
+                return i;
+            }
+        }
+        return -1;
+    };
+}
 
 
 /***/ }),
-/* 20 */
+/* 19 */
 /***/ (function(module, exports) {
 
 if (!String.prototype.includes) {
@@ -1819,10 +1975,26 @@ if (!String.prototype.padStart) {
         }
     };
 }
+if (!String.prototype.padEnd) {
+    String.prototype.padEnd = function padEnd(targetLength, padString) {
+        targetLength = targetLength >> 0;
+        padString = String(padString || " ");
+        if (this.length > targetLength) {
+            return String(this);
+        }
+        else {
+            targetLength = targetLength - this.length;
+            if (targetLength > padString.length) {
+                padString += padString.repeat(targetLength / padString.length);
+            }
+            return String(this) + padString.slice(0, targetLength);
+        }
+    };
+}
 
 
 /***/ }),
-/* 21 */
+/* 20 */
 /***/ (function(module, exports) {
 
 /* eslint-disable @typescript-eslint/no-this-alias */
@@ -1870,6 +2042,30 @@ if (!("classList" in SVGElement.prototype)) {
         configurable: true,
     });
 }
+// Source: https://github.com/tc39/proposal-object-values-entries/blob/master/polyfill.js
+var reduce = Function.bind.call(Function.call, Array.prototype.reduce);
+var isEnumerable = Function.bind.call(Function.call, Object.prototype.propertyIsEnumerable);
+var concat = Function.bind.call(Function.call, Array.prototype.concat);
+if (!Object.entries) {
+    Object.entries = function entries(O) {
+        return reduce(Object.keys(O), function (e, k) { return concat(e, typeof k === "string" && isEnumerable(O, k) ? [[k, O[k]]] : []); }, []);
+    };
+}
+
+
+/***/ }),
+/* 21 */
+/***/ (function(module, exports) {
+
+Math.sign =
+    Math.sign ||
+        function (x) {
+            x = +x;
+            if (x === 0 || isNaN(x)) {
+                return x;
+            }
+            return x > 0 ? 1 : -1;
+        };
 
 
 /***/ }),
@@ -1883,12 +2079,12 @@ __webpack_require__(23);
 // WIDGETS
 var ts_message_1 = __webpack_require__(24);
 exports.tooltip = ts_message_1.tooltip;
-var ts_popup_1 = __webpack_require__(12);
+var ts_popup_1 = __webpack_require__(11);
 exports.Popup = ts_popup_1.Popup;
 var Calendar_1 = __webpack_require__(34);
 exports.Calendar = Calendar_1.Calendar;
 // TOOLS
-var en_1 = __webpack_require__(9);
+var date_1 = __webpack_require__(15);
 var w = window;
 exports.i18n = w.dhx && w.dhx.i18n ? w.dhx.i18 : {};
 exports.i18n.setLocale = function (component, value) {
@@ -1897,7 +2093,7 @@ exports.i18n.setLocale = function (component, value) {
         target[key] = value[key];
     }
 };
-exports.i18n.calendar = exports.i18n.calendar || en_1.default;
+exports.i18n.calendar = exports.i18n.calendar || date_1.locale;
 
 
 /***/ }),
@@ -1978,6 +2174,8 @@ function message(props) {
     props.position = props.position || types_1.MessageContainerPosition.topRight;
     var messageBox = document.createElement("div");
     messageBox.className = "dhx_widget dhx_message " + (props.css || "");
+    messageBox.setAttribute("role", "alert");
+    props.text && messageBox.setAttribute("aria-describedby", "dhx_alert__content");
     if (props.html) {
         messageBox.innerHTML = props.html;
     }
@@ -2026,15 +2224,25 @@ exports.message = message;
 "use strict";
 /* WEBPACK VAR INJECTION */(function(Promise) {
 Object.defineProperty(exports, "__esModule", { value: true });
-var en_1 = __webpack_require__(10);
-var common_1 = __webpack_require__(11);
+var en_1 = __webpack_require__(9);
+var common_1 = __webpack_require__(10);
 function alert(props) {
     var apply = props.buttons && props.buttons[0] ? props.buttons[0] : en_1.default.apply;
     var unblock = common_1.blockScreen(props.blockerCss);
     return new Promise(function (res) {
         var alertBox = document.createElement("div");
+        alertBox.setAttribute("role", "alert");
+        alertBox.setAttribute("aria-modal", "true");
+        props.text && alertBox.setAttribute("aria-describedby", "dhx_alert__content");
+        props.header && alertBox.setAttribute("aria-labelledby", "dhx_alert__header");
         alertBox.className = "dhx_widget dhx_alert " + (props.css || "");
-        alertBox.innerHTML = "\n\t\t\t" + (props.header ? "<div class=\"dhx_alert__header\"> " + props.header + " </div>" : "") + "\n\t\t\t" + (props.text ? "<div class=\"dhx_alert__content\">" + props.text + "</div>" : "") + "\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? "dhx_alert__footer--" + props.buttonsAlignment : "") + "\">\n\t\t\t\t<button class=\"dhx_alert__apply-button dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t</div>";
+        var closeAlert = function (e) {
+            if (e.key === "Escape" || e.key === "Esc" || e.key === " ") {
+                e.preventDefault();
+                alertBox.querySelector("button").click();
+            }
+        };
+        alertBox.innerHTML = "\n\t\t\t" + (props.header ? "<div id=\"dhx_alert__header\" class=\"dhx_alert__header\"> " + props.header + " </div>" : "") + "\n\t\t\t" + (props.text ? "<div id=\"dhx_alert__content\" class=\"dhx_alert__content\">" + props.text + "</div>" : "") + "\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? "dhx_alert__footer--" + props.buttonsAlignment : "") + "\">\n\t\t\t\t<button type=\"button\" aria-label=\"confirm\" class=\"dhx_alert__apply-button dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t</div>";
         document.body.appendChild(alertBox);
         alertBox.querySelector(".dhx_alert__apply-button").focus();
         alertBox.querySelector("button").addEventListener("click", function () {
@@ -2042,6 +2250,7 @@ function alert(props) {
             document.body.removeChild(alertBox);
             res(true);
         });
+        alertBox.addEventListener("keydown", closeAlert);
     });
 }
 exports.alert = alert;
@@ -2508,18 +2717,26 @@ process.umask = function() { return 0; };
 "use strict";
 /* WEBPACK VAR INJECTION */(function(Promise) {
 Object.defineProperty(exports, "__esModule", { value: true });
-var en_1 = __webpack_require__(10);
-var common_1 = __webpack_require__(11);
+var en_1 = __webpack_require__(9);
+var common_1 = __webpack_require__(10);
 function confirm(props) {
-    var apply = props.buttons && props.buttons[0] ? props.buttons[0] : en_1.default.apply;
-    var reject = props.buttons && props.buttons[1] ? props.buttons[1] : en_1.default.reject;
+    props.buttonsAlignment = props.buttonsAlignment || "right";
+    var apply = props.buttons && props.buttons[1] ? props.buttons[1] : en_1.default.apply;
+    var reject = props.buttons && props.buttons[0] ? props.buttons[0] : en_1.default.reject;
     var unblock = common_1.blockScreen(props.blockerCss);
     return new Promise(function (res) {
         var confirmBox = document.createElement("div");
+        confirmBox.setAttribute("role", "alertdialog");
+        confirmBox.setAttribute("aria-modal", "true");
+        props.text && confirmBox.setAttribute("aria-describedby", "dhx_alert__content");
+        props.header && confirmBox.setAttribute("aria-labelledby", "dhx_alert__header");
+        var focusItem;
         var answer = function (val) {
             unblock();
             // eslint-disable-next-line @typescript-eslint/no-use-before-define
             confirmBox.removeEventListener("click", clickHandler);
+            // eslint-disable-next-line @typescript-eslint/no-use-before-define
+            document.removeEventListener("keydown", closeConfirm);
             document.body.removeChild(confirmBox);
             res(val);
         };
@@ -2528,11 +2745,30 @@ function confirm(props) {
                 answer(e.target.classList.contains("dhx_alert__confirm-aply"));
             }
         };
+        var closeConfirm = function (e) {
+            if (e.key === "Escape" || e.key === "Esc") {
+                confirmBox.querySelector(".dhx_alert__confirm-aply").focus();
+                answer(e.target.classList.contains("dhx_alert__confirm-reject"));
+            }
+            else if (e.key === "Tab") {
+                if (focusItem === "aply") {
+                    focusItem = "reject";
+                    confirmBox.querySelector(".dhx_alert__confirm-reject").focus();
+                }
+                else {
+                    focusItem = "aply";
+                    confirmBox.querySelector(".dhx_alert__confirm-aply").focus();
+                }
+                e.preventDefault();
+            }
+        };
         confirmBox.className = "dhx_widget dhx_alert dhx_alert--confirm" + (props.css ? " " + props.css : "");
-        confirmBox.innerHTML = "\n\t\t" + (props.header ? "<div class=\"dhx_alert__header\"> " + props.header + " </div>" : "") + "\n\t\t" + (props.text ? "<div class=\"dhx_alert__content\">" + props.text + "</div>" : "") + "\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? "dhx_alert__footer--" + props.buttonsAlignment : "") + "\">\n\t\t\t\t<button class=\"dhx_alert__confirm-aply dhx_button dhx_button--view_link dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t\t<button class=\"dhx_alert__confirm-reject dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + reject + "</button>\n\t\t\t</div>";
+        confirmBox.innerHTML = "\n\t\t" + (props.header ? "<div class=\"dhx_alert__header\"> " + props.header + " </div>" : "") + "\n\t\t" + (props.text ? "<div class=\"dhx_alert__content\">" + props.text + "</div>" : "") + "\n\t\t\t<div class=\"dhx_alert__footer " + (props.buttonsAlignment ? "dhx_alert__footer--" + props.buttonsAlignment : "") + "\">\n\t\t\t\t<button type=\"button\" aria-label=\"reject\" class=\"dhx_alert__confirm-reject dhx_button dhx_button--view_link dhx_button--color_primary dhx_button--size_medium\">" + reject + "</button>\n\t\t\t\t<button type=\"button\"  aria-label=\"aply\"class=\"dhx_alert__confirm-aply dhx_button dhx_button--view_flat dhx_button--color_primary dhx_button--size_medium\">" + apply + "</button>\n\t\t\t</div>";
         document.body.appendChild(confirmBox);
-        confirmBox.querySelector(".dhx_alert__confirm-reject").focus();
+        focusItem = "aply";
+        confirmBox.querySelector(".dhx_alert__confirm-aply").focus();
         confirmBox.addEventListener("click", clickHandler);
+        document.addEventListener("keydown", closeConfirm);
     });
 }
 exports.confirm = confirm;
@@ -2610,16 +2846,22 @@ var tooltipBox = document.createElement("div");
 var tooltipText = document.createElement("span");
 tooltipText.className = "dhx_tooltip__text";
 tooltipBox.appendChild(tooltipText);
+tooltipBox.setAttribute("role", "tooltip");
 tooltipBox.style.position = "absolute";
 var lastNode = null;
 var isActive = false;
 var hideTimeout = null;
 var showTimeout = null;
 var activeListenersDestructor;
-function showTooltip(node, text, position, css, force) {
+function showTooltip(node, text, position, css, force, htmlEnable) {
     if (force === void 0) { force = false; }
     var rects = node.getBoundingClientRect();
-    tooltipText.textContent = text;
+    if (htmlEnable) {
+        tooltipText.innerHTML = text;
+    }
+    else {
+        tooltipText.textContent = text;
+    }
     document.body.appendChild(tooltipBox);
     tooltipBox.className = "dhx_widget dhx_tooltip" + (force ? " dhx_tooltip--forced" : "");
     var _a = tooltipBox.getBoundingClientRect(), width = _a.width, height = _a.height;
@@ -2664,10 +2906,10 @@ function hideTooltip(delay) {
     }
 }
 function addListeners(node, text, config) {
-    var force = config.force, showDelay = config.showDelay, hideDelay = config.hideDelay, position = config.position, css = config.css;
+    var force = config.force, showDelay = config.showDelay, hideDelay = config.hideDelay, position = config.position, css = config.css, htmlEnable = config.htmlEnable;
     if (!force) {
         showTimeout = setTimeout(function () {
-            showTooltip(node, text, position || types_1.Position.bottom, css);
+            showTooltip(node, text, position || types_1.Position.bottom, css, false, htmlEnable);
         }, showDelay || DEFAULT_SHOW_DELAY);
     }
     var hide = function () {
@@ -2682,7 +2924,7 @@ function addListeners(node, text, config) {
         activeListenersDestructor = null;
     };
     if (force) {
-        showTooltip(node, text, position, css, force);
+        showTooltip(node, text, position, css, force, htmlEnable);
     }
     node.addEventListener("mouseleave", hide);
     node.addEventListener("blur", hide);
@@ -2766,7 +3008,7 @@ var dom_1 = __webpack_require__(2);
 var events_1 = __webpack_require__(3);
 var html_1 = __webpack_require__(1);
 var view_1 = __webpack_require__(4);
-var types_1 = __webpack_require__(13);
+var types_1 = __webpack_require__(12);
 var Popup = /** @class */ (function (_super) {
     __extends(Popup, _super);
     function Popup(config) {
@@ -2775,6 +3017,9 @@ var Popup = /** @class */ (function (_super) {
         var popup = (_this._popup = document.createElement("div"));
         popup.className = "dhx_widget dhx_popup" + (_this.config.css ? " " + _this.config.css : "");
         popup.style.position = "absolute";
+        popup.setAttribute("role", "dialog");
+        popup.setAttribute("aria-modal", "true");
+        popup.setAttribute("aria-live", "polite");
         _this.mount(popup, dom_1.create({
             render: function () { return _this.toVDOM(); },
         }));
@@ -2797,6 +3042,8 @@ var Popup = /** @class */ (function (_super) {
         if (attached) {
             this.attach(attached);
         }
+        this._popup.style.left = "0";
+        this._popup.style.top = "0";
         dom_1.awaitRedraw()
             .then(function () {
             _this._setPopupSize(node, config);
@@ -4955,11 +5202,9 @@ var dom_1 = __webpack_require__(2);
 var events_1 = __webpack_require__(3);
 var view_1 = __webpack_require__(4);
 var ts_timepicker_1 = __webpack_require__(35);
-var DateHelper_1 = __webpack_require__(46);
-var DateFormatter_1 = __webpack_require__(16);
-var helper_1 = __webpack_require__(47);
-var en_1 = __webpack_require__(9);
-var types_1 = __webpack_require__(48);
+var helper_1 = __webpack_require__(50);
+var date_1 = __webpack_require__(15);
+var types_1 = __webpack_require__(51);
 var Calendar = /** @class */ (function (_super) {
     __extends(Calendar, _super);
     function Calendar(container, config) {
@@ -4972,8 +5217,8 @@ var Calendar = /** @class */ (function (_super) {
         }, config)) || this;
         _this._selected = [];
         _this.events = new events_1.EventSystem();
-        _this.config.disabledDates = _this.config.disabledDates || _this.config.block; // TODO: remove sute_7.0
-        _this.config.mode = _this.config.mode || _this.config.view; // TODO: remove sute_7.0
+        _this.config.disabledDates = _this.config.disabledDates || _this.config.block; // TODO: remove suite_7.0
+        _this.config.mode = _this.config.mode || _this.config.view; // TODO: remove suite_7.0
         if (!_this.config.dateFormat) {
             if (_this.config.timePicker) {
                 if (_this.config.timeFormat === 12) {
@@ -4991,10 +5236,10 @@ var Calendar = /** @class */ (function (_super) {
             _this._setSelected(_this.config.value);
         }
         if (_this.config.date) {
-            _this._currentDate = DateHelper_1.DateHelper.toDateObject(_this.config.date, _this.config.dateFormat);
+            _this._currentDate = date_1.DateHelper.toDateObject(_this.config.date, _this.config.dateFormat);
         }
         else if (_this._getSelected()) {
-            _this._currentDate = DateHelper_1.DateHelper.copy(_this._getSelected());
+            _this._currentDate = date_1.DateHelper.copy(_this._getSelected());
         }
         else {
             _this._currentDate = new Date();
@@ -5022,10 +5267,10 @@ var Calendar = /** @class */ (function (_super) {
                 _this._timepicker.setValue(_this._time);
                 _this.showDate(null, "calendar");
             });
-            _this._timepicker.events.on(ts_timepicker_1.TimepickerEvents.apply, function () {
+            _this._timepicker.events.on(ts_timepicker_1.TimepickerEvents.afterApply, function () {
                 var _a = _this._timepicker.getValue(true), hour = _a.hour, minute = _a.minute, AM = _a.AM;
                 var oldDate = _this._getSelected();
-                var newDate = DateHelper_1.DateHelper.withHoursAndMinutes(_this._getSelected() || new Date(), hour, minute, AM);
+                var newDate = date_1.DateHelper.withHoursAndMinutes(_this._getSelected() || new Date(), hour, minute, AM);
                 if (_this.events.fire(types_1.CalendarEvents.beforeChange, [newDate, oldDate, true])) {
                     _this._selected[_this._selected.length - 1] = newDate;
                     _this.events.fire(types_1.CalendarEvents.change, [newDate, oldDate, true]);
@@ -5044,8 +5289,8 @@ var Calendar = /** @class */ (function (_super) {
         }
         this._selected = [];
         var currentDate = value instanceof Array ? value[0] : value;
-        var date = DateHelper_1.DateHelper.toDateObject(currentDate, this.config.dateFormat);
-        var oldDate = DateHelper_1.DateHelper.copy(this._getSelected());
+        var date = date_1.DateHelper.toDateObject(currentDate, this.config.dateFormat);
+        var oldDate = date_1.DateHelper.copy(this._getSelected());
         if (!this.events.fire(types_1.CalendarEvents.beforeChange, [date, oldDate, false])) {
             return false;
         }
@@ -5061,24 +5306,25 @@ var Calendar = /** @class */ (function (_super) {
     };
     Calendar.prototype.getValue = function (asDateObject) {
         var _this = this;
+        if (asDateObject === void 0) { asDateObject = false; }
         if (!this._selected[0]) {
             return "";
         }
         if (this.config.range) {
             return asDateObject
-                ? this._selected.map(function (date) { return DateHelper_1.DateHelper.copy(date); })
-                : this._selected.map(function (date) { return DateFormatter_1.getFormatedDate(_this.config.dateFormat, date); });
+                ? this._selected.map(function (date) { return date_1.DateHelper.copy(date); })
+                : this._selected.map(function (date) { return date_1.getFormattedDate(_this.config.dateFormat, date); });
         }
         return asDateObject
-            ? DateHelper_1.DateHelper.copy(this._selected[0])
-            : DateFormatter_1.getFormatedDate(this.config.dateFormat, this._selected[0]);
+            ? date_1.DateHelper.copy(this._selected[0])
+            : date_1.getFormattedDate(this.config.dateFormat, this._selected[0]);
     };
     Calendar.prototype.getCurrentMode = function () {
         return this._currentViewMode;
     };
     Calendar.prototype.showDate = function (date, mode) {
         if (date) {
-            this._currentDate = DateHelper_1.DateHelper.copy(date);
+            this._currentDate = date_1.DateHelper.copy(date);
         }
         if (mode) {
             this._currentViewMode = mode;
@@ -5095,12 +5341,14 @@ var Calendar = /** @class */ (function (_super) {
         this.unmount();
     };
     Calendar.prototype.clear = function () {
+        var oldDate = this.getValue(true);
         if (this.config.timePicker) {
             this._timepicker.clear();
             this._time = this._timepicker.getValue();
         }
         this._selected = [];
         this.showDate(null, this.config.mode);
+        this.events.fire(types_1.CalendarEvents.change, [this.getValue(true), oldDate, false]);
     };
     Calendar.prototype.link = function (targetCalendar) {
         var _this = this;
@@ -5110,17 +5358,17 @@ var Calendar = /** @class */ (function (_super) {
         this._linkedCalendar = targetCalendar;
         var rawLowerDate = this.getValue(true);
         var rawUpperDate = targetCalendar.getValue(true);
-        var lowerDate = rawLowerDate && DateHelper_1.DateHelper.dayStart(rawLowerDate);
-        var upperDate = rawUpperDate && DateHelper_1.DateHelper.dayStart(rawUpperDate);
+        var lowerDate = rawLowerDate && date_1.DateHelper.dayStart(rawLowerDate);
+        var upperDate = rawUpperDate && date_1.DateHelper.dayStart(rawUpperDate);
         var getRangeClass = function (date) {
-            if (DateHelper_1.DateHelper.isSameDay(upperDate, lowerDate)) {
+            if (date_1.DateHelper.isSameDay(upperDate, lowerDate)) {
                 return null;
             }
             var positionInRange = "dhx_calendar-day--in-range";
-            if (DateHelper_1.DateHelper.isSameDay(date, lowerDate)) {
+            if (date_1.DateHelper.isSameDay(date, lowerDate)) {
                 positionInRange += " dhx_calendar-day--first-date";
             }
-            if (DateHelper_1.DateHelper.isSameDay(date, upperDate)) {
+            if (date_1.DateHelper.isSameDay(date, upperDate)) {
                 positionInRange += " dhx_calendar-day--last-date";
             }
             return positionInRange;
@@ -5148,11 +5396,11 @@ var Calendar = /** @class */ (function (_super) {
         this.config.thisMonthOnly = true;
         targetCalendar.config.thisMonthOnly = true;
         this.events.on(types_1.CalendarEvents.change, function (date) {
-            lowerDate = DateHelper_1.DateHelper.dayStart(date);
+            lowerDate = date_1.DateHelper.dayStart(date);
             _this._linkedCalendar.paint();
         }, "link");
         this._linkedCalendar.events.on(types_1.CalendarEvents.change, function (date) {
-            upperDate = DateHelper_1.DateHelper.dayStart(date);
+            upperDate = date_1.DateHelper.dayStart(date);
             _this.paint();
         }, "link");
         this._linkedCalendar.paint();
@@ -5172,12 +5420,12 @@ var Calendar = /** @class */ (function (_super) {
     Calendar.prototype._setSelected = function (value) {
         var _this = this;
         var currentDate = value instanceof Array ? value[0] : value;
-        var date = DateHelper_1.DateHelper.toDateObject(currentDate, this.config.dateFormat);
+        var date = date_1.DateHelper.toDateObject(currentDate, this.config.dateFormat);
         if (value instanceof Array && this.config.range) {
             var filterDate_1 = [];
             value.forEach(function (element, index) {
                 if (index < 2) {
-                    filterDate_1.push(DateHelper_1.DateHelper.toDateObject(element, _this.config.dateFormat));
+                    filterDate_1.push(date_1.DateHelper.toDateObject(element, _this.config.dateFormat));
                 }
             });
             if (filterDate_1.length === 2 && filterDate_1[0] < filterDate_1[1]) {
@@ -5216,11 +5464,11 @@ var Calendar = /** @class */ (function (_super) {
             onclick: {
                 ".dhx_calendar-year, .dhx_calendar-month, .dhx_calendar-day": function (_e, vn) {
                     var date = vn.attrs._date;
-                    var oldDate = DateHelper_1.DateHelper.copy(_this._getSelected());
+                    var oldDate = date_1.DateHelper.copy(_this._getSelected());
                     switch (_this._currentViewMode) {
                         case "calendar": {
                             var mergedDate = _this.config.timePicker
-                                ? DateHelper_1.DateHelper.mergeHoursAndMinutes(date, _this._getSelected() || _this._currentDate)
+                                ? date_1.DateHelper.mergeHoursAndMinutes(date, _this._getSelected() || _this._currentDate)
                                 : date;
                             if (!_this.events.fire(types_1.CalendarEvents.beforeChange, [mergedDate, oldDate, true])) {
                                 return;
@@ -5240,12 +5488,12 @@ var Calendar = /** @class */ (function (_super) {
                         }
                         case "month":
                             if (_this.config.mode !== "month") {
-                                DateHelper_1.DateHelper.setMonth(_this._currentDate, date);
+                                date_1.DateHelper.setMonth(_this._currentDate, date);
                                 _this.showDate(null, "calendar");
                                 _this.events.fire(types_1.CalendarEvents.monthSelected, [date]);
                             }
                             else {
-                                var newDate = DateHelper_1.DateHelper.fromYearAndMonth(_this._currentDate.getFullYear() || _this._getSelected().getFullYear(), date);
+                                var newDate = date_1.DateHelper.fromYearAndMonth(_this._currentDate.getFullYear() || _this._getSelected().getFullYear(), date);
                                 if (!_this.events.fire(types_1.CalendarEvents.beforeChange, [newDate, oldDate, true])) {
                                     return;
                                 }
@@ -5258,12 +5506,12 @@ var Calendar = /** @class */ (function (_super) {
                             break;
                         case "year":
                             if (_this.config.mode !== "year") {
-                                DateHelper_1.DateHelper.setYear(_this._currentDate, date);
+                                date_1.DateHelper.setYear(_this._currentDate, date);
                                 _this.showDate(null, "month");
                                 _this.events.fire(types_1.CalendarEvents.yearSelected, [date]);
                             }
                             else {
-                                var newDate = DateHelper_1.DateHelper.fromYear(date);
+                                var newDate = date_1.DateHelper.fromYear(date);
                                 if (!_this.events.fire(types_1.CalendarEvents.beforeChange, [newDate, oldDate, true])) {
                                     return;
                                 }
@@ -5285,13 +5533,13 @@ var Calendar = /** @class */ (function (_super) {
                     var newDate;
                     switch (_this._currentViewMode) {
                         case "calendar":
-                            newDate = DateHelper_1.DateHelper.addMonth(_this._currentDate, 1);
+                            newDate = date_1.DateHelper.addMonth(_this._currentDate, 1);
                             break;
                         case "month":
-                            newDate = DateHelper_1.DateHelper.addYear(_this._currentDate, 1);
+                            newDate = date_1.DateHelper.addYear(_this._currentDate, 1);
                             break;
                         case "year":
-                            newDate = DateHelper_1.DateHelper.addYear(_this._currentDate, 12);
+                            newDate = date_1.DateHelper.addYear(_this._currentDate, 12);
                     }
                     _this.showDate(newDate);
                 },
@@ -5299,13 +5547,13 @@ var Calendar = /** @class */ (function (_super) {
                     var newDate;
                     switch (_this._currentViewMode) {
                         case "calendar":
-                            newDate = DateHelper_1.DateHelper.addMonth(_this._currentDate, -1);
+                            newDate = date_1.DateHelper.addMonth(_this._currentDate, -1);
                             break;
                         case "month":
-                            newDate = DateHelper_1.DateHelper.addYear(_this._currentDate, -1);
+                            newDate = date_1.DateHelper.addYear(_this._currentDate, -1);
                             break;
                         case "year":
-                            newDate = DateHelper_1.DateHelper.addYear(_this._currentDate, -12);
+                            newDate = date_1.DateHelper.addYear(_this._currentDate, -12);
                     }
                     _this.showDate(newDate);
                 },
@@ -5317,7 +5565,7 @@ var Calendar = /** @class */ (function (_super) {
             onmouseover: {
                 ".dhx_calendar-day": function (event, node) {
                     _this.events.fire(types_1.CalendarEvents.dateMouseOver, [new Date(node.attrs._date), event]);
-                    _this.events.fire(types_1.CalendarEvents.dateHover, [new Date(node.attrs._date), event]); // TODO: remove sute_7.0
+                    _this.events.fire(types_1.CalendarEvents.dateHover, [new Date(node.attrs._date), event]); // TODO: remove suite_7.0
                 },
             },
         };
@@ -5325,31 +5573,31 @@ var Calendar = /** @class */ (function (_super) {
     Calendar.prototype._getData = function (date) {
         var _this = this;
         var firstDay = this.config.weekStart === "monday" ? 1 : 0;
-        var first = DateHelper_1.DateHelper.weekStart(DateHelper_1.DateHelper.monthStart(date), firstDay);
+        var first = date_1.DateHelper.weekStart(date_1.DateHelper.monthStart(date), firstDay);
         var data = [];
         var weeksCount = 6;
         var currentDate = first;
         while (weeksCount--) {
-            var currentWeek = DateHelper_1.DateHelper.getWeekNumber(currentDate);
+            var currentWeek = date_1.DateHelper.getWeekNumber(currentDate);
             var disabledDays = 0;
             var daysCount = 7;
             var days = [];
             var _loop_1 = function () {
-                var isDateWeekEnd = DateHelper_1.DateHelper.isWeekEnd(currentDate);
+                var isDateWeekEnd = date_1.DateHelper.isWeekEnd(currentDate);
                 var isCurrentMonth = date.getMonth() === currentDate.getMonth();
                 var isBlocked = this_1.config.disabledDates && this_1.config.disabledDates(currentDate);
                 var css = [];
                 if (this_1.config.range && this_1._selected[0] && this_1._selected[1]) {
                     var getRangeClass_1 = function () {
-                        if (DateHelper_1.DateHelper.isSameDay(_this._selected[0], _this._selected[1])) {
+                        if (date_1.DateHelper.isSameDay(_this._selected[0], _this._selected[1])) {
                             return null;
                         }
                         return "dhx_calendar-day--in-range";
                     };
                     var rangeMark = function () {
                         if (_this._selected[0] && _this._selected[1]) {
-                            var firstDate = DateHelper_1.DateHelper.dayStart(_this._selected[0]);
-                            var lastDate = DateHelper_1.DateHelper.dayStart(_this._selected[1]);
+                            var firstDate = date_1.DateHelper.dayStart(_this._selected[0]);
+                            var lastDate = date_1.DateHelper.dayStart(_this._selected[1]);
                             return currentDate >= firstDate && currentDate <= lastDate && getRangeClass_1();
                         }
                     };
@@ -5388,7 +5636,7 @@ var Calendar = /** @class */ (function (_super) {
                     }
                 }
                 this_1._selected.forEach(function (selected, index) {
-                    if (selected && DateHelper_1.DateHelper.isSameDay(selected, currentDate)) {
+                    if (selected && date_1.DateHelper.isSameDay(selected, currentDate)) {
                         var dayCss = "dhx_calendar-day--selected";
                         if (_this.config.range) {
                             dayCss += " dhx_calendar-day--selected-" + (index === 0 ? "first " : "last");
@@ -5401,7 +5649,7 @@ var Calendar = /** @class */ (function (_super) {
                     day: currentDate.getDate(),
                     css: css.join(" "),
                 });
-                currentDate = DateHelper_1.DateHelper.addDay(currentDate);
+                currentDate = date_1.DateHelper.addDay(currentDate);
             };
             var this_1 = this;
             while (daysCount--) {
@@ -5418,7 +5666,7 @@ var Calendar = /** @class */ (function (_super) {
     Calendar.prototype._drawCalendar = function () {
         var date = this._currentDate;
         var _a = this.config, weekStart = _a.weekStart, thisMonthOnly = _a.thisMonthOnly, css = _a.css, timePicker = _a.timePicker, width = _a.width;
-        var weekDays = weekStart === "monday" ? __spreadArrays(en_1.default.daysShort.slice(1), [en_1.default.daysShort[0]]) : en_1.default.daysShort;
+        var weekDays = weekStart === "monday" ? __spreadArrays(date_1.locale.daysShort.slice(1), [date_1.locale.daysShort[0]]) : date_1.locale.daysShort;
         var weekDaysHeader = weekDays.map(function (day) { return dom_1.el(".dhx_calendar-weekday", day); });
         var data = this._getData(date);
         var content = [];
@@ -5451,7 +5699,7 @@ var Calendar = /** @class */ (function (_super) {
                 width: this.config.weekNumbers ? "calc(" + width + " + 48px )" : width,
             } }, this._handlers), [
             dom_1.el(".dhx_calendar__wrapper", [
-                this._drawHeader(dom_1.el("button.dhx_calendar-action__show-month.dhx_button.dhx_button--view_link.dhx_button--size_small.dhx_button--color_secondary.dhx_button--circle", en_1.default.months[date.getMonth()] + " " + date.getFullYear())),
+                this._drawHeader(dom_1.el("button.dhx_calendar-action__show-month.dhx_button.dhx_button--view_link.dhx_button--size_small.dhx_button--color_secondary.dhx_button--circle", date_1.locale.months[date.getMonth()] + " " + date.getFullYear())),
                 this.config.weekNumbers &&
                     dom_1.el(".dhx_calendar__dates-wrapper", [
                         dom_1.el(".dhx_calendar__weekdays", weekDaysHeader),
@@ -5486,7 +5734,7 @@ var Calendar = /** @class */ (function (_super) {
             } }, this._handlers), [
             dom_1.el(".dhx_calendar__wrapper", [
                 this._drawHeader(dom_1.el("button.dhx_calendar-action__show-year.dhx_button.dhx_button--view_link.dhx_button--size_small.dhx_button--color_secondary.dhx_button--circle", date.getFullYear())),
-                dom_1.el(".dhx_calendar__months", en_1.default.monthsShort.map(function (item, i) {
+                dom_1.el(".dhx_calendar__months", date_1.locale.monthsShort.map(function (item, i) {
                     return dom_1.el("div", {
                         class: "dhx_calendar-month" +
                             (currentMonth === i && currentYear === date.getFullYear()
@@ -5498,7 +5746,7 @@ var Calendar = /** @class */ (function (_super) {
                 })),
                 mode !== "month"
                     ? dom_1.el(".dhx_calendar__actions", [
-                        dom_1.el("button.dhx_button.dhx_button--color_primary.dhx_button--view_link.dhx_button--size_small.dhx_button--width_full.dhx_button--circle.dhx_calendar-action__cancel", en_1.default.cancel),
+                        dom_1.el("button.dhx_button.dhx_button--color_primary.dhx_button--view_link.dhx_button--size_small.dhx_button--width_full.dhx_button--circle.dhx_calendar-action__cancel", date_1.locale.cancel),
                     ])
                     : null,
             ]),
@@ -5507,7 +5755,7 @@ var Calendar = /** @class */ (function (_super) {
     Calendar.prototype._drawYearSelector = function () {
         var _this = this;
         var date = this._currentDate;
-        var yearsDiapason = DateHelper_1.DateHelper.getTwelweYears(date);
+        var yearsDiapason = date_1.DateHelper.getTwelweYears(date);
         var _a = this.config, css = _a.css, timePicker = _a.timePicker, weekNumbers = _a.weekNumbers, width = _a.width, mode = _a.mode;
         var widgetClass = "dhx_calendar dhx_widget" +
             (css ? " " + css : "") +
@@ -5528,7 +5776,7 @@ var Calendar = /** @class */ (function (_super) {
                 })),
                 mode !== "year" && mode !== "month"
                     ? dom_1.el(".dhx_calendar__actions", [
-                        dom_1.el("button.dhx_button.dhx_button--color_primary.dhx_button--view_link.dhx_button--size_small.dhx_button--width_full.dhx_button--circle.dhx_calendar-action__cancel", en_1.default.cancel),
+                        dom_1.el("button.dhx_button.dhx_button--color_primary.dhx_button--view_link.dhx_button--size_small.dhx_button--width_full.dhx_button--circle.dhx_calendar-action__cancel", date_1.locale.cancel),
                     ])
                     : null,
             ]),
@@ -5538,11 +5786,11 @@ var Calendar = /** @class */ (function (_super) {
         return dom_1.el(".dhx_calendar__navigation", [
             dom_1.el("button.dhx_calendar-navigation__button.dhx_calendar-action__prev" +
                 helper_1.linkButtonClasses +
-                ".dhx_button--icon.dhx_button--circle", [dom_1.el(".dhx_button__icon.dxi.dxi-chevron-left")]),
+                ".dhx_button--icon.dhx_button--circle", { "aria-label": "prev" }, [dom_1.el(".dhx_button__icon.dxi.dxi-chevron-left")]),
             actionContent,
             dom_1.el("button.dhx_calendar-navigation__button.dhx_calendar-action__next" +
                 helper_1.linkButtonClasses +
-                ".dhx_button--icon.dhx_button--circle", [dom_1.el(".dhx_button__icon.dxi.dxi-chevron-right")]),
+                ".dhx_button--icon.dhx_button--circle", { "aria-label": "next" }, [dom_1.el(".dhx_button__icon.dxi.dxi-chevron-right")]),
         ]);
     };
     Calendar.prototype._drawTimepicker = function () {
@@ -5568,7 +5816,7 @@ function __export(m) {
 }
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(__webpack_require__(36));
-__export(__webpack_require__(15));
+__export(__webpack_require__(14));
 
 
 /***/ }),
@@ -5607,10 +5855,10 @@ var dom_1 = __webpack_require__(2);
 var events_1 = __webpack_require__(3);
 var view_1 = __webpack_require__(4);
 var ts_layout_1 = __webpack_require__(37);
-var ts_slider_1 = __webpack_require__(41);
-var en_1 = __webpack_require__(44);
-var helper_1 = __webpack_require__(45);
-var types_1 = __webpack_require__(15);
+var ts_slider_1 = __webpack_require__(42);
+var en_1 = __webpack_require__(48);
+var helper_1 = __webpack_require__(49);
+var types_1 = __webpack_require__(14);
 function validate(value, max) {
     if (isNaN(value)) {
         return 0;
@@ -5624,6 +5872,7 @@ var Timepicker = /** @class */ (function (_super) {
         var _this = _super.call(this, container, core_1.extend({
             timeFormat: 24,
             controls: false,
+            valueFormat: "string",
             actions: false,
         }, config)) || this;
         _this.events = new events_1.EventSystem(_this);
@@ -5635,13 +5884,16 @@ var Timepicker = /** @class */ (function (_super) {
         if (_this.config.timeFormat === 12) {
             _this._time.hour = 12;
         }
-        _this.config.controls = _this.config.controls || _this.config.actions; // TODO: remove sute_7.0
+        _this.config.controls = _this.config.controls || _this.config.actions; // TODO: remove suite_7.0
+        _this.config.value && _this._setValue(_this.config.value);
         _this._initUI(container);
         _this._initHandlers();
         _this._initEvents();
         return _this;
     }
     Timepicker.prototype.getValue = function (asOBject) {
+        if (this.config.timeFormat === 12)
+            this._time.hour = this._time.hour % 12 || 12;
         var _a = this._time, h = _a.hour, m = _a.minute, isAM = _a.AM;
         if (asOBject) {
             var obj = {
@@ -5659,41 +5911,9 @@ var Timepicker = /** @class */ (function (_super) {
             (this.config.timeFormat === 12 ? (isAM ? "AM" : "PM") : ""));
     };
     Timepicker.prototype.setValue = function (value) {
-        var m;
-        var h;
-        var isPM;
-        if (typeof value === "number") {
-            value = new Date(value);
-        }
-        if (value instanceof Date) {
-            m = value.getMinutes();
-            h = value.getHours();
-        }
-        else if (Array.isArray(value)) {
-            h = validate(value[0], 23);
-            m = validate(value[1], 59);
-            if (value[2] && value[2].toLowerCase() === "pm") {
-                isPM = true;
-            }
-        }
-        else {
-            var matches = value.match(/\d+/g);
-            h = validate(+matches[0], 23);
-            m = validate(+matches[1], 59);
-            if (value.toLowerCase().includes("pm")) {
-                isPM = true;
-            }
-        }
-        if (isPM && h < 12) {
-            h += 12;
-        }
-        this._hoursSlider.setValue(h);
-        this._minutesSlider.setValue(m);
-        if (helper_1.isTimeCheck(value)) {
-            this._hoursSlider.setValue(0);
-            this._minutesSlider.setValue(m);
-            this._time.AM = true;
-        }
+        this._setValue(value);
+        this._hoursSlider.setValue(this._time.hour);
+        this._minutesSlider.setValue(this._time.minute);
         this._inputsView.paint();
     };
     Timepicker.prototype.clear = function () {
@@ -5712,6 +5932,51 @@ var Timepicker = /** @class */ (function (_super) {
     };
     Timepicker.prototype.getRootView = function () {
         return this.layout.getRootView();
+    };
+    Timepicker.prototype._setValue = function (value) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        var m = 0;
+        var h = 0;
+        var isPM;
+        if (typeof value === "number") {
+            value = new Date(value);
+        }
+        if (value instanceof Date) {
+            m = value.getMinutes();
+            h = value.getHours();
+        }
+        else if (Array.isArray(value)) {
+            h = validate(value[0], 23);
+            m = validate(value[1], 59);
+            if (value[2] && value[2].toLowerCase() === "pm") {
+                isPM = true;
+            }
+        }
+        else if (typeof value === "string") {
+            var matches = value.match(/\d+/g);
+            h = validate(+matches[0], 23);
+            m = validate(+matches[1], 59);
+            if (value.toLowerCase().includes("pm")) {
+                isPM = true;
+            }
+        }
+        else if (typeof value === "object" &&
+            value.hasOwnProperty("hour") &&
+            value.hasOwnProperty("minute")) {
+            h = value.hour;
+            m = value.minute;
+            isPM = !value.AM;
+        }
+        if (isPM && h < 12) {
+            h += 12;
+        }
+        if (this.config.timeFormat === 12 && !helper_1.isTimeCheck(value) && h >= 12)
+            isPM = true;
+        return (this._time = {
+            hour: h,
+            minute: m,
+            AM: !isPM,
+        });
     };
     Timepicker.prototype._initUI = function (container) {
         var _this = this;
@@ -5757,6 +6022,7 @@ var Timepicker = /** @class */ (function (_super) {
             tooltip: false,
             labelPosition: "top",
             label: en_1.default.minutes,
+            value: this.config.value ? this._time.minute : 0,
         }));
         var hSlider = (this._hoursSlider = new ts_slider_1.Slider(null, {
             min: 0,
@@ -5765,6 +6031,7 @@ var Timepicker = /** @class */ (function (_super) {
             tooltip: false,
             labelPosition: "top",
             label: en_1.default.hours,
+            value: this.config.value ? (this._time.hour === 12 && this._time.AM ? 0 : this._time.hour) : 0,
         }));
         layout.getCell("timepicker").attach(inputsView);
         layout.getCell("hour-slider").attach(hSlider);
@@ -5776,6 +6043,7 @@ var Timepicker = /** @class */ (function (_super) {
             var close_1 = function () {
                 return dom_1.el("button.dhx_timepicker__button-close.dhx_button.dhx_button--view_link.dhx_button--size_medium.dhx_button--view_link.dhx_button--color_secondary.dhx_button--icon.dhx_button--circle", {
                     onclick: _this._outerHandlers.close,
+                    "aria-label": "close timepicker",
                 }, [dom_1.el("span.dhx_button__icon.dxi.dxi-close")]);
             };
             layout.getCell("save-action").attach(save);
@@ -5800,15 +6068,26 @@ var Timepicker = /** @class */ (function (_super) {
         };
         this._outerHandlers = {
             close: function () {
-                if (!_this.events.fire(types_1.TimepickerEvents.beforeClose, [])) {
+                if (!_this.events.fire(types_1.TimepickerEvents.beforeClose, [
+                    _this.getValue(_this.config.valueFormat === "timeObject"),
+                ])) {
                     return;
                 }
-                _this.events.fire(types_1.TimepickerEvents.afterClose, []);
-                _this.events.fire(types_1.TimepickerEvents.close, []); // TODO: remove sute_7.0
+                _this.events.fire(types_1.TimepickerEvents.afterClose, [
+                    _this.getValue(_this.config.valueFormat === "timeObject"),
+                ]);
+                _this.events.fire(types_1.TimepickerEvents.close, []); // TODO: remove suite_7.0
             },
             save: function () {
-                _this.events.fire(types_1.TimepickerEvents.apply, [_this._time]);
-                _this.events.fire(types_1.TimepickerEvents.save, [_this._time]); // TODO: remove sute_7.0
+                if (!_this.events.fire(types_1.TimepickerEvents.beforeApply, [
+                    _this.getValue(_this.config.valueFormat === "timeObject"),
+                ]))
+                    return;
+                _this.events.fire(types_1.TimepickerEvents.afterApply, [
+                    _this.getValue(_this.config.valueFormat === "timeObject"),
+                ]);
+                _this.events.fire(types_1.TimepickerEvents.apply, [_this.getValue()]); // TODO: remove suite_7.0
+                _this.events.fire(types_1.TimepickerEvents.save, [_this._time]); // TODO: remove suite_7.0
             },
         };
     };
@@ -5825,7 +6104,9 @@ var Timepicker = /** @class */ (function (_super) {
             else {
                 _this._time.hour = value;
             }
-            _this.events.fire(types_1.TimepickerEvents.change, [_this.getValue()]);
+            _this.events.fire(types_1.TimepickerEvents.change, [
+                _this.getValue(_this.config.valueFormat === "timeObject"),
+            ]);
             _this._inputsView.paint();
         });
         this._minutesSlider.events.on(ts_slider_1.SliderEvents.change, function (value) {
@@ -5833,7 +6114,9 @@ var Timepicker = /** @class */ (function (_super) {
                 return;
             }
             _this._time.minute = value;
-            _this.events.fire(types_1.TimepickerEvents.change, [_this.getValue()]);
+            _this.events.fire(types_1.TimepickerEvents.change, [
+                _this.getValue(_this.config.valueFormat === "timeObject"),
+            ]);
             _this._inputsView.paint();
         });
     };
@@ -5841,12 +6124,18 @@ var Timepicker = /** @class */ (function (_super) {
         return dom_1.el(".dhx_timepicker-inputs", __assign({}, this._handlers), [
             dom_1.el("input.dhx_timepicker-input.dhx_timepicker-input--hour", {
                 _key: "hour",
-                value: this._time.hour < 10 ? "0" + this._time.hour : this._time.hour,
+                value: this.getValue(true).hour.toString().length > 1
+                    ? this.getValue(true).hour
+                    : "0" + this.getValue(true).hour,
+                "aria-label": "hours",
             }),
             dom_1.el("span.dhx_timepicker-delimer", ":"),
             dom_1.el("input.dhx_timepicker-input.dhx_timepicker-input--minutes", {
                 _key: "minute",
-                value: this._time.minute < 10 ? "0" + this._time.minute : this._time.minute,
+                value: this.getValue(true).minute.toString().length > 1
+                    ? this.getValue(true).minute
+                    : "0" + this.getValue(true).minute,
+                "aria-label": "minutes",
             }),
             this.config.timeFormat === 12
                 ? dom_1.el(".dhx_timepicker-ampm", this._time.AM ? "AM" : "PM")
@@ -5917,12 +6206,21 @@ var Layout = /** @class */ (function (_super) {
         }
         return _this;
     }
+    Layout.prototype.destructor = function () {
+        this.forEach(function (cell) {
+            if (cell.getWidget() && typeof cell.getWidget().destructor === "function") {
+                cell.getWidget().destructor();
+            }
+        });
+        _super.prototype.destructor.call(this);
+    };
     Layout.prototype.toVDOM = function () {
         if (this._isViewLayout) {
             var roots = [this.getCell(this.config.activeView).toVDOM()];
             return _super.prototype.toVDOM.call(this, roots);
         }
         var nodes = [];
+        this._inheritTypes();
         this._cells.forEach(function (cell) {
             var node = cell.toVDOM();
             if (Array.isArray(node)) {
@@ -5999,7 +6297,7 @@ var Layout = /** @class */ (function (_super) {
             }
         }
     };
-    // TODO: remove sute_7.0
+    /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
     Layout.prototype.cell = function (id) {
         return this.getCell(id);
     };
@@ -6035,6 +6333,9 @@ var Layout = /** @class */ (function (_super) {
         }
         // FIxME
         this._root._all[view.id] = view;
+        if (cell.init) {
+            cell.init(view, cell);
+        }
         return view;
     };
     Layout.prototype._haveCells = function (id) {
@@ -6043,6 +6344,27 @@ var Layout = /** @class */ (function (_super) {
             return array._cells && array._cells.length > 0;
         }
         return Object.keys(this._all).length > 0;
+    };
+    Layout.prototype._inheritTypes = function (obj) {
+        var _this = this;
+        if (obj === void 0) { obj = this._cells; }
+        if (Array.isArray(obj)) {
+            obj.forEach(function (cell) { return _this._inheritTypes(cell); });
+        }
+        else {
+            var cellConfig = obj.config;
+            if (cellConfig.rows || cellConfig.cols) {
+                var viewParent = obj.getParent();
+                if (!cellConfig.type && viewParent) {
+                    if (viewParent.config.type) {
+                        cellConfig.type = viewParent.config.type;
+                    }
+                    else {
+                        this._inheritTypes(viewParent);
+                    }
+                }
+            }
+        }
     };
     return Layout;
 }(Cell_1.Cell));
@@ -6086,12 +6408,11 @@ var view_1 = __webpack_require__(4);
 var types_1 = __webpack_require__(5);
 var helpers_1 = __webpack_require__(40);
 var events_1 = __webpack_require__(3);
+var CssManager_1 = __webpack_require__(41);
 var Cell = /** @class */ (function (_super) {
     __extends(Cell, _super);
     function Cell(parent, config) {
-        var _this = 
-        // asChild for detect parent object
-        _super.call(this, parent, core_1.extend({ gravity: true, collapsed: false }, config)) || this;
+        var _this = _super.call(this, parent, config) || this;
         _this._disabled = [];
         var p = parent;
         if (p && p.isVisible) {
@@ -6103,6 +6424,7 @@ var Cell = /** @class */ (function (_super) {
         else {
             _this.events = new events_1.EventSystem(_this);
         }
+        _this._cssManager = new CssManager_1.CssManager();
         _this.config.full =
             _this.config.full === undefined
                 ? Boolean(_this.config.header ||
@@ -6241,7 +6563,13 @@ var Cell = /** @class */ (function (_super) {
             return;
         }
         var style = this._calculateStyle();
-        var stylePadding = core_1.isDefined(this.config.padding) ? { padding: this.config.padding } : {};
+        var stylePadding = core_1.isDefined(this.config.padding)
+            ? !isNaN(Number(this.config.padding))
+                ? { padding: this.config.padding + "px" }
+                : { padding: this.config.padding }
+            : "";
+        var fullStyle = this.config.full || this.config.html ? style : __assign(__assign({}, style), stylePadding);
+        var cssClassName = this._cssManager.add(fullStyle, "dhx_cell-style__" + this._uid);
         var kids;
         if (!this.config.html) {
             if (this._ui) {
@@ -6270,12 +6598,29 @@ var Cell = /** @class */ (function (_super) {
                 handlers["on" + key] = this.config.on[key];
             }
         }
-        var cell = dom_1.el("div", __assign(__assign((_a = { _key: this._uid, style: this.config.full || this.config.html ? style : __assign(__assign({}, style), stylePadding), _ref: this._uid }, _a["aria-labelledby"] = this.config.id ? "tab-content-" + this.config.id : null, _a), handlers), { class: this._getCss(false) +
+        var typeClass = "";
+        var isParent = this.config.cols || this.config.rows;
+        if (this.config.type && isParent) {
+            switch (this.config.type) {
+                case "line":
+                    typeClass = " dhx_layout-line";
+                    break;
+                case "wide":
+                    typeClass = " dhx_layout-wide";
+                    break;
+                case "space":
+                    typeClass = " dhx_layout-space";
+                    break;
+                default:
+                    break;
+            }
+        }
+        var cell = dom_1.el("div", __assign(__assign((_a = { _key: this._uid, _ref: this._uid }, _a["aria-label"] = this.config.id ? "tab-content-" + this.config.id : null, _a), handlers), { class: this._getCss(false) +
                 (this.config.css ? " " + this.config.css : "") +
+                (fullStyle ? " " + cssClassName : "") +
                 (this.config.collapsed ? " dhx_layout-cell--collapsed" : "") +
-                (this.config.resizable ? " dhx_layout-cell--resizeble" : "") +
-                // for cells only
-                (this.config.gravity ? " dhx_layout-cell--gravity" : "") }), this.config.full
+                (this.config.resizable ? " dhx_layout-cell--resizable" : "") +
+                (this.config.type && !this.config.full ? typeClass : "") }), this.config.full
             ? [
                 dom_1.el("div", {
                     tabindex: this.config.collapsable ? "0" : "-1",
@@ -6319,11 +6664,16 @@ var Cell = /** @class */ (function (_super) {
                     ? dom_1.el("div", {
                         style: __assign(__assign({}, stylePadding), { height: "calc(100% - " + (this.config.headerHeight || 37) + "px)" }),
                         ".innerHTML": this.config.html,
-                        class: this._getCss(true) + " dhx_layout-cell-content",
+                        class: this._getCss(true) +
+                            " dhx_layout-cell-content" +
+                            (this.config.type ? typeClass : ""),
                     }, kids)
                     : null,
             ]
-            : this.config.html
+            : this.config.html &&
+                !(this.config.rows &&
+                    this.config.cols &&
+                    this.config.views)
                 ? [
                     dom_1.el(".dhx_layout-cell-content", {
                         ".innerHTML": this.config.html,
@@ -6374,14 +6724,17 @@ var Cell = /** @class */ (function (_super) {
             resizerLength: null,
             mode: null,
             percentsum: null,
+            margin: null,
         };
-        var mouseMove = function (e) {
-            if (!blockOpts.isActive || blockOpts.mode === types_1.resizeMode.unknown) {
+        var resizeMove = function (event) {
+            if (!blockOpts.isActive) {
                 return;
             }
+            var clientX = event.targetTouches ? event.targetTouches[0].clientX : event.clientX;
+            var clientY = event.targetTouches ? event.targetTouches[0].clientY : event.clientY;
             var newValue = blockOpts.xLayout
-                ? e.clientX - blockOpts.range.min + window.pageXOffset
-                : e.clientY - blockOpts.range.min + window.pageYOffset;
+                ? clientX - blockOpts.range.min + window.pageXOffset
+                : clientY - blockOpts.range.min + window.pageYOffset;
             var prop = blockOpts.xLayout ? "width" : "height";
             if (newValue < 0) {
                 newValue = blockOpts.resizerLength / 2;
@@ -6414,65 +6767,87 @@ var Cell = /** @class */ (function (_super) {
                     blockOpts.nextCell.config[prop] =
                         ((blockOpts.size - newValue) / blockOpts.size) * blockOpts.percentsum + "%";
                     break;
+                case types_1.resizeMode.unknown:
+                    _this.config[prop] = newValue - blockOpts.resizerLength / 2 + "px";
+                    blockOpts.nextCell.config[prop] =
+                        blockOpts.size - newValue - blockOpts.resizerLength / 2 + "px";
+                    _this.config.$fixed = true;
+                    break;
             }
             _this.paint();
             _this.events.fire(types_1.LayoutEvents.resize, [_this.id]);
         };
-        var mouseUp = function () {
+        var resizeEnd = function (event) {
             blockOpts.isActive = false;
             document.body.classList.remove("dhx_no-select--resize");
-            document.removeEventListener("mouseup", mouseUp);
-            document.removeEventListener("mousemove", mouseMove);
+            if (!event.targetTouches) {
+                document.removeEventListener("mouseup", resizeEnd);
+                document.removeEventListener("mousemove", resizeMove);
+            }
+            else {
+                document.removeEventListener("touchend", resizeEnd);
+                document.removeEventListener("touchmove", resizeMove);
+            }
             _this.events.fire(types_1.LayoutEvents.afterResizeEnd, [_this.id]);
+        };
+        var resizeStart = function (event) {
+            event.targetTouches && event.preventDefault();
+            if (event.which === 3) {
+                return;
+            }
+            if (blockOpts.isActive) {
+                resizeEnd(event);
+            }
+            if (!_this.events.fire(types_1.LayoutEvents.beforeResizeStart, [_this.id])) {
+                return;
+            }
+            document.body.classList.add("dhx_no-select--resize");
+            var block = _this.getCellView();
+            var nextCell = _this._getNextCell();
+            var nextBlock = nextCell.getCellView();
+            var resizerBlock = _this._getResizerView();
+            var blockOffsets = block.el.getBoundingClientRect();
+            var resizerOffsets = resizerBlock.el.getBoundingClientRect();
+            var nextBlockOffsets = nextBlock.el.getBoundingClientRect();
+            blockOpts.xLayout = _this._isXDirection();
+            blockOpts.left = blockOffsets.left + window.pageXOffset;
+            blockOpts.top = blockOffsets.top + window.pageYOffset;
+            blockOpts.margin = helpers_1.getMarginSize(_this.getParent().config, blockOpts.xLayout);
+            blockOpts.range = helpers_1.getBlockRange(blockOffsets, nextBlockOffsets, blockOpts.xLayout);
+            blockOpts.size = blockOpts.range.max - blockOpts.range.min - blockOpts.margin;
+            blockOpts.isActive = true;
+            blockOpts.nextCell = nextCell;
+            blockOpts.resizerLength = blockOpts.xLayout ? resizerOffsets.width : resizerOffsets.height;
+            blockOpts.mode = helpers_1.getResizeMode(blockOpts.xLayout, _this.config, nextCell.config);
+            if (blockOpts.mode === types_1.resizeMode.percents) {
+                var field = blockOpts.xLayout ? "width" : "height";
+                blockOpts.percentsum =
+                    parseFloat(_this.config[field].slice(0, -1)) +
+                        parseFloat(nextCell.config[field].slice(0, -1));
+            }
+            if (blockOpts.mode === types_1.resizeMode.mixedperc1) {
+                var field = blockOpts.xLayout ? "width" : "height";
+                blockOpts.percentsum =
+                    (1 / (blockOffsets[field] / (blockOpts.size - blockOpts.resizerLength))) *
+                        parseFloat(_this.config[field].slice(0, -1));
+            }
+            if (blockOpts.mode === types_1.resizeMode.mixedperc2) {
+                var field = blockOpts.xLayout ? "width" : "height";
+                blockOpts.percentsum =
+                    (1 / (nextBlockOffsets[field] / (blockOpts.size - blockOpts.resizerLength))) *
+                        parseFloat(nextCell.config[field]);
+            }
         };
         this._resizerHandlers = {
             onmousedown: function (e) {
-                if (e.which === 3) {
-                    return;
-                }
-                if (blockOpts.isActive) {
-                    mouseUp();
-                }
-                if (!_this.events.fire(types_1.LayoutEvents.beforeResizeStart, [_this.id])) {
-                    return;
-                }
-                document.body.classList.add("dhx_no-select--resize");
-                var block = _this.getCellView();
-                var nextCell = _this._getNextCell();
-                var nextBlock = nextCell.getCellView();
-                var resizerBlock = _this._getResizerView();
-                var blockOffsets = block.el.getBoundingClientRect();
-                var resizerOffsets = resizerBlock.el.getBoundingClientRect();
-                var nextBlockOffsets = nextBlock.el.getBoundingClientRect();
-                blockOpts.xLayout = _this._isXDirection();
-                blockOpts.left = blockOffsets.left + window.pageXOffset;
-                blockOpts.top = blockOffsets.top + window.pageYOffset;
-                blockOpts.range = helpers_1.getBlockRange(blockOffsets, nextBlockOffsets, blockOpts.xLayout);
-                blockOpts.size = blockOpts.range.max - blockOpts.range.min;
-                blockOpts.isActive = true;
-                blockOpts.nextCell = nextCell;
-                blockOpts.resizerLength = blockOpts.xLayout ? resizerOffsets.width : resizerOffsets.height;
-                blockOpts.mode = helpers_1.getResizeMode(blockOpts.xLayout, _this.config, nextCell.config);
-                if (blockOpts.mode === types_1.resizeMode.percents) {
-                    var field = blockOpts.xLayout ? "width" : "height";
-                    blockOpts.percentsum =
-                        parseFloat(_this.config[field]) +
-                            parseFloat(nextCell.config[field]);
-                }
-                if (blockOpts.mode === types_1.resizeMode.mixedperc1) {
-                    var field = blockOpts.xLayout ? "width" : "height";
-                    blockOpts.percentsum =
-                        (1 / (blockOffsets[field] / (blockOpts.size - blockOpts.resizerLength))) *
-                            parseFloat(_this.config[field]);
-                }
-                if (blockOpts.mode === types_1.resizeMode.mixedperc2) {
-                    var field = blockOpts.xLayout ? "width" : "height";
-                    blockOpts.percentsum =
-                        (1 / (nextBlockOffsets[field] / (blockOpts.size - blockOpts.resizerLength))) *
-                            parseFloat(nextCell.config[field]);
-                }
-                document.addEventListener("mouseup", mouseUp);
-                document.addEventListener("mousemove", mouseMove);
+                resizeStart(e);
+                document.addEventListener("mouseup", resizeEnd);
+                document.addEventListener("mousemove", resizeMove);
+            },
+            ontouchstart: function (e) {
+                resizeStart(e);
+                document.addEventListener("touchend", resizeEnd);
+                document.addEventListener("touchmove", resizeMove);
             },
             ondragstart: function (e) { return e.preventDefault(); },
         };
@@ -6512,22 +6887,98 @@ var Cell = /** @class */ (function (_super) {
             return;
         }
         var style = {};
+        var autoWidth = false;
+        var autoHeight = false;
+        if (!isNaN(Number(config.width)))
+            config.width = config.width + "px";
+        if (!isNaN(Number(config.height)))
+            config.height = config.height + "px";
+        if (!isNaN(Number(config.minWidth)))
+            config.minWidth = config.minWidth + "px";
+        if (!isNaN(Number(config.minHeight)))
+            config.minHeight = config.minHeight + "px";
+        if (!isNaN(Number(config.maxWidth)))
+            config.maxWidth = config.maxWidth + "px";
+        if (!isNaN(Number(config.maxHeight)))
+            config.maxHeight = config.maxHeight + "px";
+        if (config.width === "content")
+            autoWidth = true;
+        if (config.height === "content")
+            autoHeight = true;
+        var _a = config, width = _a.width, height = _a.height, cols = _a.cols, rows = _a.rows, minWidth = _a.minWidth, minHeight = _a.minHeight, maxWidth = _a.maxWidth, maxHeight = _a.maxHeight, gravity = _a.gravity, collapsed = _a.collapsed, $fixed = _a.$fixed;
+        var gravityNumber = Math.sign(gravity) === -1 ? 0 : gravity;
+        if (typeof gravity === "boolean") {
+            gravityNumber = gravity ? 1 : 0;
+        }
+        var fixed = typeof gravity === "boolean" ? !gravity : Math.sign(gravity) === -1;
         if (this._isXDirection()) {
-            if (config.width !== undefined && !config.collapsed) {
-                style.flexBasis = config.width;
-                style.width = config.width;
-            }
-            if (config.height !== undefined) {
-                style.height = config.height;
+            if ($fixed || width || (gravity === undefined && (minWidth || maxWidth))) {
+                fixed = true;
             }
         }
         else {
-            if (config.height !== undefined && !config.collapsed) {
-                style.height = config.height;
+            if ($fixed || height || (gravity === undefined && (minHeight || maxHeight))) {
+                fixed = true;
             }
-            if (config.width !== undefined) {
-                style.width = config.width;
+        }
+        var grow = fixed ? 0 : gravityNumber || 1;
+        var fillSpace = this._isXDirection() ? "x" : "y";
+        if (minWidth !== undefined)
+            style.minWidth = minWidth;
+        if (minHeight !== undefined)
+            style.minHeight = minHeight;
+        if (maxWidth !== undefined)
+            style.maxWidth = maxWidth;
+        if (maxHeight !== undefined)
+            style.maxHeight = maxHeight;
+        if (this._parent === undefined && !fillSpace !== undefined) {
+            fillSpace = true;
+        }
+        if (width !== undefined && width !== "content") {
+            style.width = width;
+        }
+        else {
+            if (fillSpace === true) {
+                style.width = "100%";
             }
+            else if (fillSpace === "x") {
+                if (autoWidth) {
+                    style.flex = "0 0 auto";
+                }
+                else {
+                    var isAuto = this._isXDirection() ? "1px" : "auto";
+                    style.flex = grow + " " + (cols || rows ? "0 " + isAuto : "1 auto");
+                }
+            }
+        }
+        if (height !== undefined && height !== "content") {
+            style.height = height;
+        }
+        else {
+            if (fillSpace === true) {
+                style.height = "100%";
+            }
+            else if (fillSpace === "y") {
+                if (autoHeight) {
+                    style.flex = "0 0 auto";
+                }
+                else {
+                    var isAuto = !this._isXDirection() ? "1px" : "auto";
+                    style.flex = grow + " " + (cols || rows ? "0 " + isAuto : "1 auto");
+                }
+            }
+        }
+        if (fillSpace === true && config.width === undefined && config.height === undefined) {
+            style.flex = grow + " 1 auto";
+        }
+        if (collapsed) {
+            if (this._isXDirection()) {
+                style.width = "auto";
+            }
+            else {
+                style.height = "auto";
+            }
+            style.flex = "0 0 auto";
         }
         return style;
     };
@@ -6585,6 +7036,16 @@ function getBlockRange(block1, block2, isXLayout) {
     };
 }
 exports.getBlockRange = getBlockRange;
+function getMarginSize(config, xLayout) {
+    if (!config) {
+        return 0;
+    }
+    if (config.type === "space" || (config.type === "wide" && xLayout)) {
+        return 10;
+    }
+    return 0;
+}
+exports.getMarginSize = getMarginSize;
 
 
 /***/ }),
@@ -6593,16 +7054,108 @@ exports.getBlockRange = getBlockRange;
 
 "use strict";
 
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(__webpack_require__(42));
-__export(__webpack_require__(14));
+var core_1 = __webpack_require__(0);
+var CssManager = /** @class */ (function () {
+    function CssManager() {
+        this._classes = {};
+        var styles = document.createElement("style");
+        styles.id = "dhx_generated_styles";
+        this._styleCont = document.head.appendChild(styles);
+    }
+    CssManager.prototype.update = function () {
+        if (this._styleCont.innerHTML !== this._generateCss()) {
+            document.head.appendChild(this._styleCont);
+            this._styleCont.innerHTML = this._generateCss();
+        }
+    };
+    CssManager.prototype.remove = function (className) {
+        delete this._classes[className];
+        this.update();
+    };
+    CssManager.prototype.add = function (cssList, customId, silent) {
+        if (silent === void 0) { silent = false; }
+        var cssString = this._toCssString(cssList);
+        var id = this._findSameClassId(cssString);
+        if (id && customId && customId !== id) {
+            this._classes[customId] = this._classes[id];
+            return customId;
+        }
+        if (id) {
+            return id;
+        }
+        return this._addNewClass(cssString, customId, silent);
+    };
+    CssManager.prototype.get = function (className) {
+        if (this._classes[className]) {
+            var props = {};
+            var css = this._classes[className].split(";");
+            for (var _i = 0, css_1 = css; _i < css_1.length; _i++) {
+                var item = css_1[_i];
+                if (item) {
+                    var prop = item.split(":");
+                    props[prop[0]] = prop[1];
+                }
+            }
+            return props;
+        }
+        return null;
+    };
+    CssManager.prototype._findSameClassId = function (cssString) {
+        for (var key in this._classes) {
+            if (cssString === this._classes[key]) {
+                return key;
+            }
+        }
+        return null;
+    };
+    CssManager.prototype._addNewClass = function (cssString, customId, silent) {
+        var id = customId || "dhx_generated_class_" + core_1.uid();
+        this._classes[id] = cssString;
+        if (!silent) {
+            this.update();
+        }
+        return id;
+    };
+    CssManager.prototype._toCssString = function (cssList) {
+        var cssString = "";
+        for (var key in cssList) {
+            var prop = cssList[key];
+            var name_1 = key.replace(/[A-Z]{1}/g, function (letter) { return "-" + letter.toLowerCase(); });
+            cssString += name_1 + ":" + prop + ";";
+        }
+        return cssString;
+    };
+    CssManager.prototype._generateCss = function () {
+        var result = "";
+        for (var key in this._classes) {
+            var cssProps = this._classes[key];
+            result += "." + key + "{" + cssProps + "}\n";
+        }
+        return result;
+    };
+    return CssManager;
+}());
+exports.CssManager = CssManager;
+exports.cssManager = new CssManager();
 
 
 /***/ }),
 /* 42 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+function __export(m) {
+    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+}
+Object.defineProperty(exports, "__esModule", { value: true });
+__export(__webpack_require__(43));
+__export(__webpack_require__(13));
+
+
+/***/ }),
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6620,14 +7173,26 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = __webpack_require__(0);
 var dom_1 = __webpack_require__(2);
 var events_1 = __webpack_require__(3);
-var Keymanager_1 = __webpack_require__(43);
+var KeyManager_1 = __webpack_require__(44);
 var view_1 = __webpack_require__(4);
-var ts_popup_1 = __webpack_require__(12);
-var types_1 = __webpack_require__(14);
+var ts_popup_1 = __webpack_require__(11);
+var types_1 = __webpack_require__(13);
+var helper_1 = __webpack_require__(46);
 function normalizeValue(value, min, max) {
     if (value < min) {
         return min;
@@ -6666,16 +7231,29 @@ var Slider = /** @class */ (function (_super) {
             tooltip: true,
         }, config)) || this;
         _this._disabled = false;
-        _this.config.helpMessage = _this.config.helpMessage || _this.config.help; // TODO: remove sute_7.0
+        _this.config.helpMessage = _this.config.helpMessage || _this.config.help; // TODO: remove suite_7.0
         if (_this.config.thumbLabel !== undefined) {
-            _this.config.tooltip = _this.config.thumbLabel; // TODO: remove sute_7.0
+            _this.config.tooltip = _this.config.thumbLabel; // TODO: remove suite_7.0
         }
         if (_this.config.labelInline) {
-            _this.config.labelPosition = "left"; // TODO: remove sute_7.0
+            _this.config.labelPosition = "left"; // TODO: remove suite_7.0
         }
         _this.events = new events_1.EventSystem(_this);
         _this._axis = _this.config.mode === "horizontal" ? "clientX" : "clientY";
         _this._initStartPosition();
+        _this._keyManager = new KeyManager_1.KeyManager(function (_, focusId) {
+            var inFocus = focusId === _this._uid;
+            var activeEl = document.activeElement;
+            var refs = _this.getRootView().refs;
+            if (!refs || !inFocus) {
+                return false;
+            }
+            var runner = refs.runner;
+            if (runner && runner.el === activeEl) {
+                return true;
+            }
+            return _this.config.range && refs.extraRunner && refs.extraRunner.el === activeEl;
+        });
         _this._initHotkeys();
         var vNode = dom_1.create({
             render: function () { return _this._draw(); },
@@ -6736,7 +7314,7 @@ var Slider = /** @class */ (function (_super) {
         this.paint();
     };
     Slider.prototype.destructor = function () {
-        this._hotkeysDestructor();
+        this._keyManager.destructor();
         document.body.contains(this._tooltip) && document.body.removeChild(this._tooltip);
         this._tooltip = null;
         this.unmount();
@@ -6756,51 +7334,39 @@ var Slider = /** @class */ (function (_super) {
     };
     Slider.prototype._initHotkeys = function () {
         var _this = this;
-        var isRunnersInFocus = function () {
-            var activeEl = document.activeElement;
-            var refs = _this.getRootView().refs;
-            if (!refs) {
-                return false;
-            }
-            var runner = refs.runner;
-            if (runner && runner.el === activeEl) {
-                return true;
-            }
-            if (_this.config.range && refs.extraRunner && refs.extraRunner.el === activeEl) {
-                return true;
-            }
-            return false;
+        var handlers = {
+            arrowLeft: function (e) {
+                if (_this.config.mode === "vertical") {
+                    return;
+                }
+                e.preventDefault();
+                _this._move(-_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
+            },
+            arrowRight: function (e) {
+                if (_this.config.mode === "vertical") {
+                    return;
+                }
+                e.preventDefault();
+                _this._move(_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
+            },
+            arrowUp: function (e) {
+                if (_this.config.mode === "horizontal") {
+                    return;
+                }
+                e.preventDefault();
+                _this._move(_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
+            },
+            arrowDown: function (e) {
+                if (_this.config.mode === "horizontal") {
+                    return;
+                }
+                e.preventDefault();
+                _this._move(-_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
+            },
         };
-        this._hotkeysDestructor = Keymanager_1.addHotkeys({
-            arrowleft: function (e) {
-                if (_this.config.mode === "vertical") {
-                    return;
-                }
-                e.preventDefault();
-                _this._move(-_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
-            },
-            arrowright: function (e) {
-                if (_this.config.mode === "vertical") {
-                    return;
-                }
-                e.preventDefault();
-                _this._move(_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
-            },
-            arrowup: function (e) {
-                if (_this.config.mode === "horizontal") {
-                    return;
-                }
-                e.preventDefault();
-                _this._move(_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
-            },
-            arrowdown: function (e) {
-                if (_this.config.mode === "horizontal") {
-                    return;
-                }
-                e.preventDefault();
-                _this._move(-_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
-            },
-        }, isRunnersInFocus);
+        for (var key in handlers) {
+            this._keyManager.addHotKey(key, handlers[key]);
+        }
     };
     Slider.prototype._move = function (value, forExtra) {
         if (this.config.inverse) {
@@ -6870,9 +7436,10 @@ var Slider = /** @class */ (function (_super) {
     };
     Slider.prototype._initHandlers = function () {
         var _this = this;
-        var mouseMove = function (e) {
-            e.preventDefault();
-            var x = ((e[_this._axis] - _this._getBegining()) / _this._length) * 100;
+        var sliderMove = function (e) {
+            !e.targetTouches && e.preventDefault();
+            var currentPosition = e.targetTouches ? e.targetTouches[0][_this._axis] : e[_this._axis];
+            var x = ((currentPosition - _this._getBegining()) / _this._length) * 100;
             if (_this._findNewDirection) {
                 if (Math.abs(_this._currentPosition - x) < 1) {
                     return;
@@ -6890,14 +7457,56 @@ var Slider = /** @class */ (function (_super) {
             }
             _this.paint();
         };
-        var mouseUp = function (e) {
+        var sliderEnd = function (e) {
             _this.events.fire(types_1.SliderEvents.mouseup, [e]);
             setTimeout(function () {
                 _this._isMouseMoving = false;
                 _this.paint();
             }, 4);
-            document.removeEventListener("mouseup", mouseUp);
-            document.removeEventListener("mousemove", mouseMove);
+            if (!e.targetTouches) {
+                document.removeEventListener("mouseup", sliderEnd);
+                document.removeEventListener("mousemove", sliderMove);
+            }
+            else {
+                document.removeEventListener("touchend", sliderEnd);
+                document.removeEventListener("touchmove", sliderMove);
+            }
+        };
+        var sliderStart = function (e) {
+            if (_this._disabled || e.which === 3) {
+                return;
+            }
+            _this.events.fire(types_1.SliderEvents.mousedown, [e]);
+            _this._isMouseMoving = true;
+            var active;
+            if (e.target.classList.contains("dhx_slider__thumb--extra")) {
+                _this._isExtraActive = true;
+                active = _this._extraCurrentPosition;
+            }
+            else {
+                _this._isExtraActive = false;
+                active = _this._currentPosition;
+            }
+            _this._findNewDirection = null;
+            // define possible range
+            if (_this.config.range) {
+                var _a = _this._currentPosition > _this._extraCurrentPosition
+                    ? [_this._currentPosition, _this._extraCurrentPosition]
+                    : [_this._extraCurrentPosition, _this._currentPosition], more = _a[0], less = _a[1];
+                if (_this._currentPosition === _this._extraCurrentPosition) {
+                    _this._findNewDirection = active;
+                    _this._possibleRange = [0, 100];
+                }
+                else if (active < more) {
+                    _this._possibleRange = [0, more];
+                }
+                else {
+                    _this._possibleRange = [less, 100];
+                }
+            }
+            else {
+                _this._possibleRange = [0, 100];
+            }
         };
         if (this.config.helpMessage) {
             this._helper = new ts_popup_1.Popup({
@@ -6912,42 +7521,22 @@ var Slider = /** @class */ (function (_super) {
                 _this._helper.show(e.target);
             },
             onmousedown: function (e) {
-                if (_this._disabled || e.which === 3) {
-                    return;
-                }
-                _this.events.fire(types_1.SliderEvents.mousedown, [e]);
-                _this._isMouseMoving = true;
-                var active;
-                if (e.target.classList.contains("dhx_slider__thumb--extra")) {
-                    _this._isExtraActive = true;
-                    active = _this._extraCurrentPosition;
-                }
-                else {
-                    _this._isExtraActive = false;
-                    active = _this._currentPosition;
-                }
-                _this._findNewDirection = null;
-                // define possible range
-                if (_this.config.range) {
-                    var _a = _this._currentPosition > _this._extraCurrentPosition
-                        ? [_this._currentPosition, _this._extraCurrentPosition]
-                        : [_this._extraCurrentPosition, _this._currentPosition], more = _a[0], less = _a[1];
-                    if (_this._currentPosition === _this._extraCurrentPosition) {
-                        _this._findNewDirection = active;
-                        _this._possibleRange = [0, 100];
-                    }
-                    else if (active < more) {
-                        _this._possibleRange = [0, more];
-                    }
-                    else {
-                        _this._possibleRange = [less, 100];
-                    }
-                }
-                else {
-                    _this._possibleRange = [0, 100];
-                }
-                document.addEventListener("mousemove", mouseMove);
-                document.addEventListener("mouseup", mouseUp);
+                sliderStart(e);
+                document.addEventListener("mousemove", sliderMove);
+                document.addEventListener("mouseup", sliderEnd);
+            },
+            ontouchstart: function (e) {
+                _this._setTooltip(e);
+                _this._mouseIn = false;
+                sliderStart(e);
+                document.addEventListener("touchmove", sliderMove);
+                document.addEventListener("touchend", sliderEnd);
+                _this.paint();
+            },
+            ontouchend: function (e) {
+                _this._setTooltip(e);
+                _this._mouseIn = false;
+                _this.paint();
             },
             onlabelClick: function () {
                 var refs = _this.getRootView().refs;
@@ -6977,19 +7566,23 @@ var Slider = /** @class */ (function (_super) {
                 }
                 _this.paint();
             },
-            onmouseover: function () {
+            onmouseover: function (e) {
+                _this._setTooltip(e);
                 _this._mouseIn = true;
                 _this.paint();
             },
-            onmouseout: function () {
+            onmouseout: function (e) {
+                _this._setTooltip(e);
                 _this._mouseIn = false;
                 _this.paint();
             },
-            onfocus: function () {
+            onfocus: function (e) {
+                _this._setTooltip(e);
                 _this._focusIn = true;
                 _this.paint();
             },
-            onblur: function () {
+            onblur: function (e) {
+                _this._setTooltip(e);
                 _this._focusIn = false;
                 _this.paint();
             },
@@ -7064,8 +7657,8 @@ var Slider = /** @class */ (function (_super) {
                 : ""));
     };
     Slider.prototype._draw = function () {
-        var _a = this.config, labelPosition = _a.labelPosition, labelWidth = _a.labelWidth, mode = _a.mode, label = _a.label, hiddenLabel = _a.hiddenLabel, tick = _a.tick, majorTick = _a.majorTick, css = _a.css, helpMessage = _a.helpMessage;
-        var width = labelPosition === "left" && labelWidth ? labelWidth : "";
+        var _a = this.config, labelPosition = _a.labelPosition, mode = _a.mode, hiddenLabel = _a.hiddenLabel, tick = _a.tick, majorTick = _a.majorTick, css = _a.css, helpMessage = _a.helpMessage;
+        var labelStyle = helper_1.getLabelStyle(__assign(__assign({}, this.config), { required: false }));
         if (this._tooltip && (!this._mouseIn || !this._focusIn || !this._isMouseMoving)) {
             document.body.contains(this._tooltip) && document.body.removeChild(this._tooltip);
         }
@@ -7073,36 +7666,34 @@ var Slider = /** @class */ (function (_super) {
             class: "dhx_slider" +
                 " dhx_slider--mode_" +
                 mode +
-                (label && labelPosition === "left" ? " dhx_slider--label-inline" : "") +
+                (labelPosition === "left" ? " dhx_slider--label-inline" : "") +
                 (hiddenLabel ? " dhx_slider--label_sr" : "") +
                 (tick ? " dhx_slider--ticks" : "") +
                 (majorTick ? " dhx_slider--major-ticks" : "") +
                 (css ? " " + css : "") +
                 (this._disabled ? " dhx_slider--disabled" : ""),
         }, [
-            label
+            labelStyle
                 ? dom_1.el("label.dhx_label.dhx_slider__label", {
-                    style: { minWidth: width, maxWidth: width },
+                    style: labelStyle.style,
                     class: helpMessage ? "dhx_label--with-help" : "",
                     onclick: this._handlers.onlabelClick,
                 }, helpMessage
                     ? [
-                        dom_1.el("span.dhx_label__holder", label),
+                        labelStyle.label && dom_1.el("span.dhx_label__holder", labelStyle.label),
                         dom_1.el("span.dhx_label-help.dxi.dxi-help-circle-outline", {
                             tabindex: "0",
                             role: "button",
                             onclick: this._handlers.showHelper,
                         }),
                     ]
-                    : label)
+                    : labelStyle.label)
                 : null,
             this._drawSlider(),
         ]);
     };
     Slider.prototype._drawSlider = function () {
-        return dom_1.el(".dhx_widget.dhx_slider__track-holder", 
-        // (this.config.mode === Direction.vertical ? ".dhx_slider--vertical" : ".dhx_slider--horizontal"),
-        {
+        return dom_1.el(".dhx_widget.dhx_slider__track-holder", {
             dhx_widget_id: this._uid,
         }, [
             dom_1.el(".dhx_slider__track", {
@@ -7115,8 +7706,9 @@ var Slider = /** @class */ (function (_super) {
                 dom_1.el("div", {
                     _ref: "runner",
                     class: this._getRunnerCss(),
+                    ontouchstart: this._handlers.ontouchstart,
+                    ontouchend: this._handlers.ontouchend,
                     onmousedown: this._handlers.onmousedown,
-                    onmousemove: this._handlers.onmousemove,
                     onfocus: this._handlers.onfocus,
                     onblur: this._handlers.onblur,
                     style: this._getRunnerStyle(),
@@ -7134,8 +7726,9 @@ var Slider = /** @class */ (function (_super) {
                     ? dom_1.el("div", {
                         _ref: "extraRunner",
                         class: this._getRunnerCss(true),
+                        ontouchstart: this._handlers.ontouchstart,
+                        ontouchend: this._handlers.ontouchend,
                         onmousedown: this._handlers.onmousedown,
-                        onmousemove: this._handlers.onmousemove,
                         onfocus: this._handlers.onfocus,
                         onblur: this._handlers.onblur,
                         style: this._getRunnerStyle(true),
@@ -7181,7 +7774,9 @@ var Slider = /** @class */ (function (_super) {
     };
     Slider.prototype._drawTooltip = function (forExtra) {
         if (forExtra === void 0) { forExtra = false; }
-        var pos = forExtra ? this._extraCurrentPosition : this._currentPosition;
+        if (this._activeTooltip === "none")
+            return;
+        var pos = this._activeTooltip === "extraTooltip" ? this._extraCurrentPosition : this._currentPosition;
         var direction = this.config.mode === "horizontal" ? "left" : "top";
         var classNameModifiers = "";
         if ((forExtra && this._isExtraActive) || (!forExtra && !this._isExtraActive)) {
@@ -7190,7 +7785,9 @@ var Slider = /** @class */ (function (_super) {
         if (!this._tooltip) {
             this._tooltip = document.createElement("div");
         }
-        var coords = this.getRootView().refs.runner.el.getBoundingClientRect();
+        var coords = this._activeTooltip === "tooltip"
+            ? this.getRootView().refs.runner.el.getBoundingClientRect()
+            : this.getRootView().refs.extraRunner.el.getBoundingClientRect();
         this._tooltip.className = "dhx_slider__thumb-label" + classNameModifiers;
         this._tooltip.style.left = coords.x + (direction === "left" ? 6 : -30) + window.pageXOffset + "px";
         this._tooltip.style.top = coords.y + (direction === "left" ? -30 : 6) + window.pageYOffset + "px";
@@ -7244,18 +7841,30 @@ var Slider = /** @class */ (function (_super) {
             return value === 0;
         }
     };
+    Slider.prototype._setTooltip = function (e) {
+        if (e.target.classList.contains("dhx_slider__thumb--extra")) {
+            this._activeTooltip = "extraTooltip";
+        }
+        else if (e.target.classList.contains("dhx_slider__thumb")) {
+            this._activeTooltip = "tooltip";
+        }
+        else {
+            this._activeTooltip = "none";
+        }
+    };
     return Slider;
 }(view_1.View));
 exports.Slider = Slider;
 
 
 /***/ }),
-/* 43 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var FocusManager_1 = __webpack_require__(45);
 var html_1 = __webpack_require__(1);
 function getHotKeyCode(code) {
     var matches = code.toLowerCase().match(/\w+/g);
@@ -7278,69 +7887,81 @@ function getHotKeyCode(code) {
     }
     return comp + key;
 }
+var ie_key_map = {
+    Up: "arrowUp",
+    Down: "arrowDown",
+    Right: "arrowRight",
+    Left: "arrowLeft",
+    Esc: "escape",
+    Spacebar: "space",
+};
 var KeyManager = /** @class */ (function () {
-    function KeyManager() {
+    function KeyManager(beforeCall) {
         var _this = this;
         this._keysStorage = {};
-        document.addEventListener("keydown", function (e) {
-            var comp = (e.ctrlKey || e.metaKey ? 4 : 0) + (e.shiftKey ? 2 : 0) + (e.altKey ? 1 : 0);
+        this._initHandler = function (e) {
             var key;
             if ((e.which >= 48 && e.which <= 57) || (e.which >= 65 && e.which <= 90)) {
-                // A-Z 0-9
                 key = String.fromCharCode(e.which);
             }
             else {
-                // dirty: added space binding
-                if (e.which === 32 && !html_1.isIE()) {
-                    key = e.code;
-                }
-                else {
-                    key = e.key;
-                }
+                var keyName = e.which === 32 ? e.code : e.key;
+                key = html_1.isIE() ? ie_key_map[keyName] || keyName : keyName;
             }
-            var code = comp + (key && key.toLowerCase());
-            var actions = _this._keysStorage[code];
+            var actions = _this._keysStorage[(e.ctrlKey || e.metaKey ? 4 : 0) +
+                (e.shiftKey ? 2 : 0) +
+                (e.altKey ? 1 : 0) +
+                (key && key.toLowerCase())];
             if (actions) {
                 for (var i = 0; i < actions.length; i++) {
+                    if (_this._beforeCall && _this._beforeCall(e, FocusManager_1.focusManager.getFocusId()) === false) {
+                        return;
+                    }
                     actions[i].handler(e);
                 }
             }
-        });
+        };
+        if (beforeCall) {
+            this._beforeCall = beforeCall;
+        }
+        document.addEventListener("keydown", this._initHandler);
     }
-    KeyManager.prototype.addHotKey = function (key, handler, scope) {
+    KeyManager.prototype.destructor = function () {
+        document.removeEventListener("keydown", this._initHandler);
+        this.removeHotKey();
+    };
+    KeyManager.prototype.addHotKey = function (key, handler) {
         var code = getHotKeyCode(key);
         if (!this._keysStorage[code]) {
             this._keysStorage[code] = [];
         }
-        this._keysStorage[code].push({
-            handler: handler,
-            scope: scope,
-        });
+        this._keysStorage[code].push({ handler: handler });
     };
-    KeyManager.prototype.removeHotKey = function (key, scope) {
-        var keyStorage = this._keysStorage;
+    KeyManager.prototype.removeHotKey = function (key, handler) {
+        var _this = this;
         if (key) {
-            var code = getHotKeyCode(key);
-            delete keyStorage[code];
-        }
-        if (scope) {
-            for (var code in keyStorage) {
-                var toDelete = []; // items index to delete
-                for (var i = 0; i < keyStorage[code].length; i++) {
-                    if (keyStorage[code][i].scope === scope) {
-                        toDelete.push(i);
+            if (key && handler) {
+                var code_1 = getHotKeyCode(key);
+                var functionToString_1 = function (fun) {
+                    return fun
+                        .toString()
+                        .replace(/\n/g, "")
+                        .replace(/\s/g, "");
+                };
+                this._keysStorage[code_1].forEach(function (existHotKey, i) {
+                    if (functionToString_1(existHotKey.handler) === functionToString_1(handler)) {
+                        delete _this._keysStorage[code_1][i];
+                        _this._keysStorage[code_1] = _this._keysStorage[code_1].filter(function (el) { return el; });
                     }
-                }
-                if (keyStorage[code].length === toDelete.length) {
-                    delete keyStorage[code];
-                }
-                else {
-                    for (var i = toDelete.length - 1; i >= 0; i--) {
-                        // begin from last coz splice change other index
-                        keyStorage[code].splice(toDelete[i], 1);
-                    }
-                }
+                });
             }
+            else {
+                var code = getHotKeyCode(key);
+                delete this._keysStorage[code];
+            }
+        }
+        else {
+            this._keysStorage = {};
         }
     };
     KeyManager.prototype.exist = function (key) {
@@ -7349,25 +7970,284 @@ var KeyManager = /** @class */ (function () {
     };
     return KeyManager;
 }());
-exports.keyManager = new KeyManager();
-function addHotkeys(handlers, beforeCall) {
-    var context = new Date();
-    var wrapHandler = function (handler) { return function (e) {
-        if (beforeCall && beforeCall() === false) {
-            return;
-        }
-        handler(e);
-    }; };
-    for (var key in handlers) {
-        exports.keyManager.addHotKey(key, wrapHandler(handlers[key]), context);
-    }
-    return function () { return exports.keyManager.removeHotKey(undefined, context); };
-}
-exports.addHotkeys = addHotkeys;
+exports.KeyManager = KeyManager;
 
 
 /***/ }),
-/* 44 */
+/* 45 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var html_1 = __webpack_require__(1);
+var FocusManager = /** @class */ (function () {
+    function FocusManager() {
+        var _this = this;
+        this._initHandler = function (e) { return (_this._activeWidgetId = html_1.locate(e, "dhx_widget_id")); };
+        document.addEventListener("click", this._initHandler);
+    }
+    FocusManager.prototype.getFocusId = function () {
+        return this._activeWidgetId;
+    };
+    FocusManager.prototype.setFocusId = function (id) {
+        this._activeWidgetId = id;
+    };
+    return FocusManager;
+}());
+exports.focusManager = new FocusManager();
+
+
+/***/ }),
+/* 46 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
+var _a;
+Object.defineProperty(exports, "__esModule", { value: true });
+/* eslint-disable no-useless-escape */
+var types_1 = __webpack_require__(47);
+function getFormItemCss(item, validate) {
+    var _a;
+    var type = item.type, labelPosition = item.labelPosition, required = item.required, disabled = item.disabled, hiddenLabel = item.hiddenLabel, _b = item.css, css = _b === void 0 ? "" : _b, $validationStatus = item.$validationStatus;
+    var cssStatus = (_a = {},
+        _a[types_1.ValidationStatus.pre] = "",
+        _a[types_1.ValidationStatus.error] = " dhx_form-group--state_error",
+        _a[types_1.ValidationStatus.success] = " dhx_form-group--state_success",
+        _a)[$validationStatus] || "";
+    var labelPositionCss = labelPosition === "left" ? " dhx_form-group--inline" : "";
+    var requiredCss = required && type !== "select" ? " dhx_form-group--required" : "";
+    var disabledCss = disabled ? " dhx_form-group--disabled" : "";
+    var labelSrCss = hiddenLabel ? " dhx_form-group--label_sr" : "";
+    if (validate) {
+        return labelPositionCss + cssStatus + requiredCss + disabledCss + labelSrCss + " " + css;
+    }
+    return labelPositionCss + disabledCss + labelSrCss + " " + css;
+}
+exports.getFormItemCss = getFormItemCss;
+var validators = (_a = {},
+    _a[types_1.Validation.validAlphaNumeric] = /^[a-zA-Z0-9_]+$/,
+    _a[types_1.Validation.validEmail] = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+    _a[types_1.Validation.validInteger] = /^-?\d+$/,
+    _a[types_1.Validation.validIPv4] = /\b((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.|$)){4}\b/,
+    _a[types_1.Validation.validNumeric] = /^-?\d+(\.\d+)?$/,
+    _a);
+function getValidationMessage(item) {
+    var _a;
+    var validationMessage = (_a = {
+            undefined: item.preMessage
+        },
+        _a[types_1.ValidationStatus.pre] = item.preMessage,
+        _a[types_1.ValidationStatus.error] = item.errorMessage,
+        _a[types_1.ValidationStatus.success] = item.successMessage,
+        _a)[item.$validationStatus] || "";
+    return validationMessage;
+}
+exports.getValidationMessage = getValidationMessage;
+function validateTemplate(template, str) {
+    return validators[template] ? validators[template].test(str) : true;
+}
+exports.validateTemplate = validateTemplate;
+function isBlock(config) {
+    return Boolean(config.rows) || Boolean(config.cols);
+}
+exports.isBlock = isBlock;
+function validateInput(value, validation) {
+    var isValid = true;
+    if (typeof validation === "function") {
+        isValid = validation(value);
+    }
+    else {
+        var regExp = validators[validation];
+        if (regExp) {
+            isValid = regExp.test(value.toString());
+        }
+    }
+    return isValid;
+}
+exports.validateInput = validateInput;
+function baseInputValidate(value, config) {
+    var inputType = config.inputType, min = config.min, max = config.max, minlength = config.minlength, maxlength = config.maxlength;
+    if (inputType === "number") {
+        if (typeof min !== "undefined" && typeof max !== "undefined") {
+            return Number(min) <= Number(max) && Number(min) <= Number(value) && Number(max) >= Number(value);
+        }
+        else if (typeof min !== "undefined") {
+            return Number(min) <= Number(value);
+        }
+        else if (typeof max !== "undefined") {
+            return Number(max) >= Number(value);
+        }
+        else {
+            return value === 0 || value === "0" || !!value;
+        }
+    }
+    else {
+        if (typeof minlength !== "undefined" && typeof maxlength !== "undefined") {
+            return Number(minlength) <= String(value).length && Number(maxlength) >= String(value).length;
+        }
+        else if (typeof minlength !== "undefined") {
+            return Number(minlength) <= String(value).length;
+        }
+        else if (typeof maxlength !== "undefined") {
+            return Number(maxlength) >= String(value).length;
+        }
+        else {
+            return typeof value === "string" && !!value;
+        }
+    }
+}
+exports.baseInputValidate = baseInputValidate;
+function isTimeFormat(value, timeFormat) {
+    if (timeFormat === 12) {
+        return /(^0?([1-9][0-2]?):[0-5][0-9]?([AP][M]?)$)/i.test(value);
+    }
+    return /(^(0[0-9]|1[0-9]|2[0-3]|[0-9]):[0-5][0-9]$)/i.test(value);
+}
+exports.isTimeFormat = isTimeFormat;
+function isVerify(config) {
+    var validationProp = ["required", "validation", "minlength", "maxlength", "min", "max"];
+    return validationProp.some(function (prop) {
+        switch (prop) {
+            case "required":
+                return !!config[prop];
+            case "validation":
+                return (typeof config[prop] === "function" ||
+                    config[prop] === "email" ||
+                    config[prop] === "integer" ||
+                    config[prop] === "numeric" ||
+                    config[prop] === "alphanumeric" ||
+                    config[prop] === "IPv4");
+            case "minlength":
+            case "maxlength":
+                return typeof config[prop] === "number" || typeof config[prop] === "string";
+            case "min":
+            case "max":
+                return ((typeof config[prop] === "number" || typeof config[prop] === "string") &&
+                    config.inputType === "number");
+        }
+    });
+}
+exports.isVerify = isVerify;
+exports.baseProps = ["width", "height", "padding", "css"];
+exports.widgetConfig = function (_a) {
+    var width = _a.width, type = _a.type, id = _a.id, name = _a.name, hidden = _a.hidden, editable = _a.editable, valueFormat = _a.valueFormat, css = _a.css, required = _a.required, helpMessage = _a.helpMessage, preMessage = _a.preMessage, successMessage = _a.successMessage, errorMessage = _a.errorMessage, label = _a.label, labelWidth = _a.labelWidth, labelPosition = _a.labelPosition, hiddenLabel = _a.hiddenLabel, validation = _a.validation, icon = _a.icon, res = __rest(_a, ["width", "type", "id", "name", "hidden", "editable", "valueFormat", "css", "required", "helpMessage", "preMessage", "successMessage", "errorMessage", "label", "labelWidth", "labelPosition", "hiddenLabel", "validation", "icon"]);
+    return res;
+};
+function getLabelStyle(config) {
+    var helpMessage = config.helpMessage, type = config.type, labelWidth = config.labelWidth, label = config.label;
+    var isZero = labelWidth && labelWidth.toString().startsWith("0");
+    var required = type !== "text" && config.required;
+    if (!helpMessage && !required && (!label || (label && isZero)) && (!labelWidth || isZero)) {
+        return false;
+    }
+    return {
+        style: (label || labelWidth) && !isZero && { width: labelWidth, "max-width": "100%" },
+        label: label && isZero ? null : label,
+    };
+}
+exports.getLabelStyle = getLabelStyle;
+
+
+/***/ }),
+/* 47 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var FormEvents;
+(function (FormEvents) {
+    FormEvents["change"] = "change";
+    FormEvents["click"] = "click";
+    FormEvents["beforeShow"] = "beforeShow";
+    FormEvents["afterShow"] = "afterShow";
+    FormEvents["beforeHide"] = "beforeHide";
+    FormEvents["afterHide"] = "afterHide";
+    FormEvents["afterValidate"] = "afterValidate";
+    FormEvents["beforeValidate"] = "beforeValidate";
+    FormEvents["beforeChangeProperties"] = "beforeChangeProperties";
+    FormEvents["afterChangeProperties"] = "afterChangeProperties";
+    FormEvents["beforeSend"] = "beforesend";
+    FormEvents["afterSend"] = "aftersend";
+    /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
+    FormEvents["buttonClick"] = "buttonClick";
+    /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
+    FormEvents["validationFail"] = "validationfail";
+})(FormEvents = exports.FormEvents || (exports.FormEvents = {}));
+var FileStatus;
+(function (FileStatus) {
+    FileStatus["queue"] = "queue";
+    FileStatus["uploaded"] = "uploaded";
+    FileStatus["failed"] = "failed";
+    FileStatus["inprogress"] = "inprogress";
+})(FileStatus = exports.FileStatus || (exports.FileStatus = {}));
+var UploaderEvents;
+(function (UploaderEvents) {
+    UploaderEvents["uploadBegin"] = "uploadbegin";
+    UploaderEvents["beforeUploadFile"] = "beforeuploadfile";
+    UploaderEvents["uploadFile"] = "uploadfile";
+    UploaderEvents["uploadFail"] = "uploadfail";
+    UploaderEvents["uploadComplete"] = "uploadcomplete";
+    UploaderEvents["uploadProgress"] = "uploadprogress";
+})(UploaderEvents = exports.UploaderEvents || (exports.UploaderEvents = {}));
+var ItemEvent;
+(function (ItemEvent) {
+    ItemEvent["click"] = "click";
+    ItemEvent["change"] = "change";
+    ItemEvent["input"] = "input";
+    ItemEvent["changeOptions"] = "changeOptions";
+    ItemEvent["beforeShow"] = "beforeShow";
+    ItemEvent["afterShow"] = "afterShow";
+    ItemEvent["beforeHide"] = "beforeHide";
+    ItemEvent["afterHide"] = "afterHide";
+    ItemEvent["beforeValidate"] = "beforeValidate";
+    ItemEvent["afterValidate"] = "afterValidate";
+    ItemEvent["beforeUploadFile"] = "beforeUploadFile";
+    ItemEvent["uploadFile"] = "uploadfile";
+    ItemEvent["uploadBegin"] = "uploadBegin";
+    ItemEvent["uploadComplete"] = "uploadComplete";
+    ItemEvent["uploadFail"] = "uploadFail";
+    ItemEvent["uploadProgress"] = "uploadProgress";
+    ItemEvent["beforeChangeProperties"] = "beforeChangeProperties";
+    ItemEvent["afterChangeProperties"] = "afterChangeProperties";
+})(ItemEvent = exports.ItemEvent || (exports.ItemEvent = {}));
+var ClearMethod;
+(function (ClearMethod) {
+    ClearMethod["value"] = "value";
+    ClearMethod["validation"] = "validation";
+})(ClearMethod = exports.ClearMethod || (exports.ClearMethod = {}));
+var Validation;
+(function (Validation) {
+    Validation["empty"] = "";
+    Validation["validEmail"] = "email";
+    Validation["validInteger"] = "integer";
+    Validation["validNumeric"] = "numeric";
+    Validation["validAlphaNumeric"] = "alphanumeric";
+    Validation["validIPv4"] = "IPv4";
+})(Validation = exports.Validation || (exports.Validation = {}));
+var ValidationStatus;
+(function (ValidationStatus) {
+    ValidationStatus[ValidationStatus["pre"] = 0] = "pre";
+    ValidationStatus[ValidationStatus["error"] = 1] = "error";
+    ValidationStatus[ValidationStatus["success"] = 2] = "success";
+})(ValidationStatus = exports.ValidationStatus || (exports.ValidationStatus = {}));
+
+
+/***/ }),
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7382,7 +8262,7 @@ exports.default = locale;
 
 
 /***/ }),
-/* 45 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7398,108 +8278,7 @@ exports.isTimeCheck = isTimeCheck;
 
 
 /***/ }),
-/* 46 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var core_1 = __webpack_require__(0);
-var DateFormatter_1 = __webpack_require__(16);
-var DateHelper = /** @class */ (function () {
-    function DateHelper() {
-    }
-    DateHelper.copy = function (d) {
-        return new Date(d);
-    };
-    DateHelper.fromYear = function (year) {
-        return new Date(year, 0, 1);
-    };
-    DateHelper.fromYearAndMonth = function (year, month) {
-        return new Date(year, month, 1);
-    };
-    DateHelper.weekStart = function (d, firstWeekday) {
-        var diff = (d.getDay() + 7 - firstWeekday) % 7;
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate() - diff);
-    };
-    DateHelper.monthStart = function (d) {
-        return new Date(d.getFullYear(), d.getMonth(), 1);
-    };
-    DateHelper.yearStart = function (d) {
-        return new Date(d.getFullYear(), 0, 1);
-    };
-    DateHelper.dayStart = function (d) {
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    };
-    DateHelper.addDay = function (d, count) {
-        if (count === void 0) { count = 1; }
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate() + count);
-    };
-    DateHelper.addMonth = function (d, count) {
-        if (count === void 0) { count = 1; }
-        return new Date(d.getFullYear(), d.getMonth() + count);
-    };
-    DateHelper.addYear = function (d, count) {
-        if (count === void 0) { count = 1; }
-        return new Date(d.getFullYear() + count, d.getMonth());
-    };
-    DateHelper.withHoursAndMinutes = function (d, hours, minutes, dateFormat) {
-        if (dateFormat === undefined || (!dateFormat && hours === 12) || (dateFormat && hours !== 12)) {
-            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hours, minutes);
-        }
-        else if (dateFormat && hours === 12) {
-            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, minutes);
-        }
-        else {
-            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), hours + 12, minutes);
-        }
-    };
-    DateHelper.setMonth = function (d, month) {
-        d.setMonth(month);
-    };
-    DateHelper.setYear = function (d, year) {
-        d.setFullYear(year);
-    };
-    DateHelper.mergeHoursAndMinutes = function (source, target) {
-        return new Date(source.getFullYear(), source.getMonth(), source.getDate(), target.getHours(), target.getMinutes());
-    };
-    DateHelper.isWeekEnd = function (d) {
-        return d.getDay() === 0 || d.getDay() === 6;
-    };
-    DateHelper.getTwelweYears = function (d) {
-        var y = d.getFullYear();
-        var firstYear = y - (y % 12);
-        return core_1.range(firstYear, firstYear + 11);
-    };
-    DateHelper.getWeekNumber = function (d) {
-        if (d.getDay() !== 6) {
-            d = DateHelper.addDay(d, 6 - d.getDay());
-        }
-        var dayMS = 24 * 60 * 60 * 1000;
-        var ordinal = (d.valueOf() - DateHelper.yearStart(d).valueOf()) / dayMS;
-        return Math.floor((ordinal - d.getDay() + 10) / 7);
-    };
-    DateHelper.isSameDay = function (d1, d2) {
-        return (d1.getFullYear() === d2.getFullYear() &&
-            d1.getMonth() === d2.getMonth() &&
-            d1.getDate() === d2.getDate());
-    };
-    DateHelper.toDateObject = function (date, dateFormat) {
-        if (typeof date === "string") {
-            return DateFormatter_1.stringToDate(date, dateFormat);
-        }
-        else {
-            return new Date(date);
-        }
-    };
-    DateHelper.nullTimestampDate = new Date(0);
-    return DateHelper;
-}());
-exports.DateHelper = DateHelper;
-
-
-/***/ }),
-/* 47 */
+/* 50 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7509,7 +8288,7 @@ exports.linkButtonClasses = ".dhx_button.dhx_button--view_link.dhx_button--icon.
 
 
 /***/ }),
-/* 48 */
+/* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7524,7 +8303,7 @@ var CalendarEvents;
     CalendarEvents["yearSelected"] = "yearSelected";
     CalendarEvents["cancelClick"] = "cancelClick";
     CalendarEvents["dateMouseOver"] = "dateMouseOver";
-    // TODO: remove sute_7.0
+    /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
     CalendarEvents["dateHover"] = "dateHover";
 })(CalendarEvents = exports.CalendarEvents || (exports.CalendarEvents = {}));
 
@@ -7532,3 +8311,4 @@ var CalendarEvents;
 /***/ })
 /******/ ]);
 });if (window.dhx_legacy) { if (window.dhx){ for (var key in dhx) dhx_legacy[key] = dhx[key]; } window.dhx = dhx_legacy; delete window.dhx_legacy; }
+//# sourceMappingURL=calendar.js.map

@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.6.5.8 Standard
+dhtmlxCalendar v.7.1.0 Standard
 This software is covered by GPL-2.0 License. Usage without proper license is prohibited.
 
 (c) XB Software.
