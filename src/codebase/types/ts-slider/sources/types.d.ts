@@ -15,6 +15,12 @@ export declare enum SliderEvents {
     mousedown = "mousedown",
     mouseup = "mouseup"
 }
+export interface ISliderEventHandlersMap {
+    [key: string]: (...args: any[]) => any;
+    [SliderEvents.change]: (value: number, oldValue: number, isRange: boolean) => void;
+    [SliderEvents.mousedown]: (event: Event) => void;
+    [SliderEvents.mouseup]: (event: Event) => void;
+}
 export declare type ILabelPosition = "left" | "top";
 export interface ISliderConfig {
     min: number;

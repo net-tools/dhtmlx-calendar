@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.7.1.0 GPL
+dhtmlxCalendar v.7.1.4 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -484,6 +484,13 @@ function isIE() {
     return ua.includes("MSIE ") || ua.includes("Trident/");
 }
 exports.isIE = isIE;
+function isSafari() {
+    var check = function (str) { return str.test(window.navigator.userAgent); };
+    var chrome = check(/Chrome/);
+    var firefox = check(/Firefox/);
+    return !chrome && !firefox && check(/Safari/);
+}
+exports.isSafari = isSafari;
 function getRealPosition(node) {
     var rects = node.getBoundingClientRect();
     return {
@@ -1652,7 +1659,13 @@ function stringToDate(str, format, validate) {
             formatter = token.value;
         }
     }
-    if (formatter) {
+    if (formatter === "%A" || formatter === "%a") {
+        dateParts.unshift({
+            formatter: formatter,
+            value: str.slice(index),
+        });
+    }
+    else if (formatter) {
         dateParts.push({
             formatter: formatter,
             value: str.slice(index),
@@ -1816,6 +1829,39 @@ Object.values = Object.values
             return result;
         }
     };
+if (!Object.assign) {
+    Object.defineProperty(Object, "assign", {
+        enumerable: false,
+        configurable: true,
+        writable: true,
+        value: function (target) {
+            "use strict";
+            var args = [];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                args[_i - 1] = arguments[_i];
+            }
+            if (target === undefined || target === null) {
+                throw new TypeError("Cannot convert first argument to object");
+            }
+            var to = Object(target);
+            for (var i = 0; i < args.length; i++) {
+                var nextSource = args[i];
+                if (nextSource === undefined || nextSource === null) {
+                    continue;
+                }
+                var keysArray = Object.keys(Object(nextSource));
+                for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
+                    var nextKey = keysArray[nextIndex];
+                    var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
+                    if (desc !== undefined && desc.enumerable) {
+                        to[nextKey] = nextSource[nextKey];
+                    }
+                }
+            }
+            return to;
+        },
+    });
+}
 
 
 /***/ }),
@@ -2043,12 +2089,28 @@ if (!("classList" in SVGElement.prototype)) {
     });
 }
 // Source: https://github.com/tc39/proposal-object-values-entries/blob/master/polyfill.js
-var reduce = Function.bind.call(Function.call, Array.prototype.reduce);
-var isEnumerable = Function.bind.call(Function.call, Object.prototype.propertyIsEnumerable);
-var concat = Function.bind.call(Function.call, Array.prototype.concat);
 if (!Object.entries) {
+    var reduce_1 = Function.bind.call(Function.call, Array.prototype.reduce);
+    var isEnumerable_1 = Function.bind.call(Function.call, Object.prototype.propertyIsEnumerable);
+    var concat_1 = Function.bind.call(Function.call, Array.prototype.concat);
     Object.entries = function entries(O) {
-        return reduce(Object.keys(O), function (e, k) { return concat(e, typeof k === "string" && isEnumerable(O, k) ? [[k, O[k]]] : []); }, []);
+        return reduce_1(Object.keys(O), function (e, k) { return concat_1(e, typeof k === "string" && isEnumerable_1(O, k) ? [[k, O[k]]] : []); }, []);
+    };
+}
+// Source: https://gist.github.com/rockinghelvetica/00b9f7b5c97a16d3de75ba99192ff05c
+if (!Event.prototype.composedPath) {
+    Event.prototype.composedPath = function () {
+        if (this.path) {
+            return this.path;
+        }
+        var target = this.target;
+        this.path = [];
+        while (target.parentNode !== null) {
+            this.path.push(target);
+            target = target.parentNode;
+        }
+        this.path.push(document, window);
+        return this.path;
     };
 }
 
@@ -2853,6 +2915,21 @@ var isActive = false;
 var hideTimeout = null;
 var showTimeout = null;
 var activeListenersDestructor;
+function getZIndex(node) {
+    if (node &&
+        node.classList.contains("dhx_popup--window") &&
+        node.classList.contains("dhx_popup--window_active")) {
+        return 2147483647;
+    }
+    if (node && node.classList.contains("dhx_popup--window")) {
+        return 2147483646;
+    }
+    if (node && node.offsetParent) {
+        return getZIndex(node.offsetParent);
+    }
+    return null;
+}
+exports.getZIndex = getZIndex;
 function showTooltip(node, text, position, css, force, htmlEnable) {
     if (force === void 0) { force = false; }
     var rects = node.getBoundingClientRect();
@@ -2866,6 +2943,10 @@ function showTooltip(node, text, position, css, force, htmlEnable) {
     tooltipBox.className = "dhx_widget dhx_tooltip" + (force ? " dhx_tooltip--forced" : "");
     var _a = tooltipBox.getBoundingClientRect(), width = _a.width, height = _a.height;
     var _b = findPosition(rects, position, width, height), left = _b.left, top = _b.top, pos = _b.pos;
+    var zIndex = getZIndex(node);
+    if (zIndex) {
+        tooltipBox.style.zIndex = zIndex.toString();
+    }
     switch (pos) {
         case types_1.RealPosition.bottom:
             tooltipBox.style.left = left + "px";
@@ -3183,20 +3264,20 @@ var Popup = /** @class */ (function (_super) {
     };
     Popup.prototype._detectOuterClick = function (node) {
         var _this = this;
-        var outerClick = function (e) {
-            var target = e.target;
+        var outerClick = function (event) {
+            var target = event.target;
             while (target) {
                 if (target === node || target === _this._popup) {
                     return;
                 }
                 target = target.parentNode;
             }
-            if (_this._hide(true, e)) {
-                document.removeEventListener("click", outerClick);
+            if (_this._hide(true, event)) {
+                document.removeEventListener("mousedown", outerClick);
             }
         };
-        document.addEventListener("click", outerClick);
-        return function () { return document.removeEventListener("click", outerClick); };
+        document.addEventListener("mousedown", outerClick);
+        return function () { return document.removeEventListener("mousedown", outerClick); };
     };
     Popup.prototype._hide = function (fromOuterClick, e) {
         if (this._isActive) {
@@ -6038,7 +6119,7 @@ var Timepicker = /** @class */ (function (_super) {
         layout.getCell("minute-slider").attach(mSlider);
         if (this.config.controls) {
             var save = function () {
-                return dom_1.el("button.dhx_timepicker__button-save.dhx_button.dhx_button--view_flat.dhx_button--color_primary.dhx_button--size_medium.dhx_button--circle.dhx_button--width_full", { onclick: _this._outerHandlers.save }, en_1.default.save);
+                return dom_1.el("button.dhx_timepicker__button-save.dhx_button.dhx_button--view_flat.dhx_button--color_primary.dhx_button--size_small.dhx_button--circle.dhx_button--width_full", { onclick: _this._outerHandlers.save }, en_1.default.save);
             };
             var close_1 = function () {
                 return dom_1.el("button.dhx_timepicker__button-close.dhx_button.dhx_button--view_link.dhx_button--size_medium.dhx_button--view_link.dhx_button--color_secondary.dhx_button--icon.dhx_button--circle", {
@@ -7241,18 +7322,11 @@ var Slider = /** @class */ (function (_super) {
         _this.events = new events_1.EventSystem(_this);
         _this._axis = _this.config.mode === "horizontal" ? "clientX" : "clientY";
         _this._initStartPosition();
-        _this._keyManager = new KeyManager_1.KeyManager(function (_, focusId) {
-            var inFocus = focusId === _this._uid;
+        _this._keyManager = new KeyManager_1.KeyManager(function () {
+            var _a;
             var activeEl = document.activeElement;
-            var refs = _this.getRootView().refs;
-            if (!refs || !inFocus) {
-                return false;
-            }
-            var runner = refs.runner;
-            if (runner && runner.el === activeEl) {
-                return true;
-            }
-            return _this.config.range && refs.extraRunner && refs.extraRunner.el === activeEl;
+            var element = (_a = _this.getRootView().refs[_this._isExtraActive ? "extraRunner" : "runner"]) === null || _a === void 0 ? void 0 : _a.el;
+            return activeEl === element;
         });
         _this._initHotkeys();
         var vNode = dom_1.create({
@@ -7314,7 +7388,7 @@ var Slider = /** @class */ (function (_super) {
         this.paint();
     };
     Slider.prototype.destructor = function () {
-        this._keyManager.destructor();
+        this._keyManager && this._keyManager.destructor();
         document.body.contains(this._tooltip) && document.body.removeChild(this._tooltip);
         this._tooltip = null;
         this.unmount();
@@ -7336,30 +7410,18 @@ var Slider = /** @class */ (function (_super) {
         var _this = this;
         var handlers = {
             arrowLeft: function (e) {
-                if (_this.config.mode === "vertical") {
-                    return;
-                }
                 e.preventDefault();
                 _this._move(-_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
             },
             arrowRight: function (e) {
-                if (_this.config.mode === "vertical") {
-                    return;
-                }
                 e.preventDefault();
                 _this._move(_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
             },
             arrowUp: function (e) {
-                if (_this.config.mode === "horizontal") {
-                    return;
-                }
                 e.preventDefault();
                 _this._move(_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
             },
             arrowDown: function (e) {
-                if (_this.config.mode === "horizontal") {
-                    return;
-                }
                 e.preventDefault();
                 _this._move(-_this.config.step, e.target.classList.contains("dhx_slider__thumb--extra"));
             },
@@ -8021,14 +8083,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var types_1 = __webpack_require__(47);
 function getFormItemCss(item, validate) {
     var _a;
-    var type = item.type, labelPosition = item.labelPosition, required = item.required, disabled = item.disabled, hiddenLabel = item.hiddenLabel, _b = item.css, css = _b === void 0 ? "" : _b, $validationStatus = item.$validationStatus;
+    var labelPosition = item.labelPosition, required = item.required, disabled = item.disabled, hiddenLabel = item.hiddenLabel, _b = item.css, css = _b === void 0 ? "" : _b, $validationStatus = item.$validationStatus;
     var cssStatus = (_a = {},
         _a[types_1.ValidationStatus.pre] = "",
         _a[types_1.ValidationStatus.error] = " dhx_form-group--state_error",
         _a[types_1.ValidationStatus.success] = " dhx_form-group--state_success",
         _a)[$validationStatus] || "";
     var labelPositionCss = labelPosition === "left" ? " dhx_form-group--inline" : "";
-    var requiredCss = required && type !== "select" ? " dhx_form-group--required" : "";
+    var requiredCss = required ? " dhx_form-group--required" : "";
     var disabledCss = disabled ? " dhx_form-group--disabled" : "";
     var labelSrCss = hiddenLabel ? " dhx_form-group--label_sr" : "";
     if (validate) {
@@ -8256,7 +8318,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var locale = {
     hours: "Hours",
     minutes: "Minutes",
-    save: "save",
+    save: "Save",
 };
 exports.default = locale;
 
