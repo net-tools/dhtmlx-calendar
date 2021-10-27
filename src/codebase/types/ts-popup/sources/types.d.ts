@@ -6,7 +6,7 @@ export interface IPopup {
     hide(): void;
     toVDOM(): void;
     attachHTML(html: string): void;
-    attach(name: any, config?: any): VNode;
+    attach(node: HTMLElement, config?: IShowConfig, attached?: any): VNode;
     isVisible(): boolean;
     paint(): void;
     destructor(): void;

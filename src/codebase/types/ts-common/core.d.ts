@@ -28,4 +28,5 @@ export interface IContainerConfig {
     font?: string;
 }
 export declare const getStringWidth: (value: string, config?: IContainerConfig) => number;
+export declare const rgbToHex: (color: string) => string;
 export {};

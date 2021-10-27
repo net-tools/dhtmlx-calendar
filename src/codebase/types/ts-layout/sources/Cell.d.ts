@@ -1,17 +1,19 @@
 import { IViewLike, View } from "../../ts-common/view";
 import { ICell, ICellConfig, ILayout, LayoutEvents, ILayoutEventHandlersMap } from "./types";
 import { IEventSystem } from "../../ts-common/events";
+import { ScrollView } from "../../ts-common/ScrollView";
 export declare class Cell extends View implements ICell {
     id: string;
     config: ICellConfig;
     events: IEventSystem<LayoutEvents, ILayoutEventHandlersMap>;
+    scrollView: ScrollView;
     protected _handlers: {
         [key: string]: (...args: any) => any;
     };
     protected _disabled: string[];
-    private _parent;
-    private _ui;
-    private _resizerHandlers;
+    protected _parent: ILayout;
+    protected _ui: IViewLike;
+    protected _resizerHandlers: any;
     constructor(parent: string | HTMLElement | ILayout, config: ICellConfig);
     paint(): void;
     isVisible(): boolean;
@@ -29,10 +31,10 @@ export declare class Cell extends View implements ICell {
     toVDOM(nodes?: any[]): any;
     protected _getCss(_content?: boolean): string;
     protected _initHandlers(): void;
-    private _getCollapseIcon;
-    private _isLastCell;
-    private _getNextCell;
-    private _getResizerView;
-    private _isXDirection;
-    private _calculateStyle;
+    protected _getCollapseIcon(): "dxi dxi-chevron-right" | "dxi dxi-chevron-left" | "dxi dxi-chevron-up" | "dxi dxi-chevron-down";
+    protected _isLastCell(): boolean;
+    protected _getNextCell(): any;
+    protected _getResizerView(): any;
+    protected _isXDirection(): any;
+    protected _calculateStyle(): any;
 }

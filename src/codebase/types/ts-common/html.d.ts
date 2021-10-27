@@ -17,6 +17,7 @@ export declare function getBox(elem: any): {
     height: number;
 };
 export declare function getScrollbarWidth(): number;
+export declare function getScrollbarHeight(): number;
 export interface IFitTarget {
     top: number;
     left: number;
@@ -41,6 +42,7 @@ export declare type Position = "left" | "right" | "bottom" | "top";
 export declare type FlexDirection = "start" | "center" | "end" | "between" | "around" | "evenly";
 export declare function isIE(): boolean;
 export declare function isSafari(): any;
+export declare function isFirefox(): any;
 export declare function getRealPosition(node: HTMLElement): IFitPosition;
 export declare function calculatePosition(pos: IFitPosition, config: IFitPositionConfig): {
     left: string;

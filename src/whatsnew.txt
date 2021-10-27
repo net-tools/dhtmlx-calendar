@@ -1,3 +1,40 @@
+Version 7.2.4 (October 13, 2021)
+----------------------------
+
+Version 7.2.3 (September 27, 2021)
+----------------------------
+
+Version 7.2.2 (September 13, 2021)
+----------------------------
+
+Version 7.2.1 (August 26, 2021)
+----------------------------
+
+### Fixes
+
+- Fix the issue which caused sending of the form after clicking the buttons of the calendar if the calendar is placed into the HTML form
+
+Version 7.2.0 (August 4, 2021)
+----------------------------
+
+Version 7.1.10 (July 20, 2021)
+----------------------------
+
+Version 7.1.9 (June 24, 2021)
+----------------------------
+
+### Fixes
+
+- Fix the incorrect display of the date after changing the time zone
+
+Version 7.1.8 (June 10, 2021)
+----------------------------
+
+### Fixes
+
+- Fix the issue that caused the previously selected date to remain highlighted with the grey circle after selecting some other date
+- Fix the script error that appeared when two calendars are linked and the "destructor()" method is called
+
 Version 7.1.7 (May 17, 2021)
 ----------------------------
 
@@ -8,6 +45,7 @@ Version 7.1.5 (April 22, 2021)
 ----------------------------
 
 ### Fixes
+
 - Fix the "destructor()" method
 
 Version 7.1.4 (April 16, 2021)

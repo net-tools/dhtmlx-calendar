@@ -9,15 +9,23 @@ export interface ISlider {
     disable(): void;
     enable(): void;
     isDisabled(): boolean;
+    focus(extra?: boolean): void;
+    blur(): void;
 }
 export declare enum SliderEvents {
     change = "change",
+    focus = "focus",
+    blur = "blur",
+    keydown = "keydown",
     mousedown = "mousedown",
     mouseup = "mouseup"
 }
 export interface ISliderEventHandlersMap {
     [key: string]: (...args: any[]) => any;
     [SliderEvents.change]: (value: number, oldValue: number, isRange: boolean) => void;
+    [SliderEvents.focus]: () => void;
+    [SliderEvents.blur]: () => void;
+    [SliderEvents.keydown]: (event: KeyboardEvent) => void;
     [SliderEvents.mousedown]: (event: Event) => void;
     [SliderEvents.mouseup]: (event: Event) => void;
 }

@@ -2,6 +2,7 @@ import { IView, IViewLike } from "../../ts-common/view";
 import { VNode } from "../../ts-common/dom";
 import { IEventSystem } from "../../ts-common/events";
 import { FlexDirection } from "../../ts-common/html";
+import { ScrollView } from "../../ts-common/ScrollView";
 export interface ICellConfig {
     id?: string;
     html?: string;
@@ -63,6 +64,9 @@ export interface ICell extends IView {
     expand(): void;
     toggle(): void;
 }
+export interface IProCell extends ICell {
+    scrollView: ScrollView;
+}
 export interface ILayout extends ICell {
     config: ILayoutConfig;
     removeCell(id: string): void;
@@ -109,15 +113,6 @@ export interface ILayoutEventHandlersMap {
     [LayoutEvents.afterCollapse]: (id: string) => void;
     [LayoutEvents.beforeExpand]: (id: string) => boolean | void;
     [LayoutEvents.afterExpand]: (id: string) => void;
-}
-export declare enum resizeMode {
-    unknown = 0,
-    percents = 1,
-    pixels = 2,
-    mixedpx1 = 3,
-    mixedpx2 = 4,
-    mixedperc1 = 5,
-    mixedperc2 = 6
 }
 export declare type LayoutCallback = (cell: ICell, index: number, array: any) => any;
 export declare type IFillSpace = boolean | "x" | "y";

@@ -1,10 +1,10 @@
 import { IEventSystem } from "../../ts-common/events";
 import { View } from "../../ts-common/view";
 import { Popup } from "../../ts-popup";
-import { ISlider, SliderEvents, ISliderConfig } from "./types";
+import { ISlider, SliderEvents, ISliderConfig, ISliderEventHandlersMap } from "./types";
 export declare class Slider extends View implements ISlider {
     config: ISliderConfig;
-    events: IEventSystem<SliderEvents>;
+    events: IEventSystem<SliderEvents, ISliderEventHandlersMap>;
     protected _helper: Popup;
     private _offsets;
     private _currentPosition;
@@ -27,6 +27,7 @@ export declare class Slider extends View implements ISlider {
     enable(): void;
     isDisabled(): boolean;
     focus(extra?: boolean): void;
+    blur(): void;
     getValue(): number[];
     setValue(value: string | number | number[]): void;
     destructor(): void;

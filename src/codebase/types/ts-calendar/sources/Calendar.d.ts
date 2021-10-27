@@ -7,6 +7,7 @@ export declare class Calendar extends View implements ICalendar {
     private _selected;
     private _currentDate;
     private _currentViewMode;
+    private _isSelectedInCurrentRange;
     private _handlers;
     private _timepicker;
     private _time;
@@ -31,4 +32,6 @@ export declare class Calendar extends View implements ICalendar {
     private _drawYearSelector;
     private _drawHeader;
     private _drawTimepicker;
+    private _selectDate;
+    private _moveBrowseFocus;
 }
