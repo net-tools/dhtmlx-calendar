@@ -200,6 +200,7 @@ export interface IDragConfig {
 export interface ICopyObject {
     id: Id;
     component: IObjWithData;
+    newId?: Id;
 }
 export declare enum DataEvents {
     afterAdd = "afteradd",

@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.7.2.4 GPL
+dhtmlxCalendar v.7.2.5 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -1351,6 +1351,10 @@ function normalizeColumns(_a, configChanged) {
         if (isContent) {
             col.$uniqueData = [];
         }
+        if (col.minWidth && col.minWidth < 20)
+            col.minWidth = 20;
+        if (col.maxWidth && col.maxWidth < 20)
+            col.maxWidth = 20;
         var width = col.minWidth || 100;
         if (col.width) {
             if (col.maxWidth && col.minWidth) {
@@ -1370,6 +1374,7 @@ function normalizeColumns(_a, configChanged) {
             else {
                 width = col.width;
             }
+            width = width < 20 ? 20 : width;
         }
         col.$width = col.$width && !configChanged ? col.$width : width;
         if (col.$width > col.maxWidth) {
@@ -2497,8 +2502,26 @@ var FocusManager = /** @class */ (function () {
     function FocusManager() {
         var _this = this;
         this._initHandler = function (e) { return (_this._activeWidgetId = html_1.locate(e, "dhx_widget_id")); };
+        this._removeFocusClass = function (e) {
+            var classList = document.body.classList;
+            if (classList.contains("utilityfocus"))
+                classList.remove("utilityfocus");
+        };
+        this._addFocusClass = function (e) {
+            var classList = document.body.classList;
+            if (e.code === "Tab") {
+                if (!classList.contains("utilityfocus"))
+                    classList.add("utilityfocus");
+            }
+            else {
+                if (classList.contains("utilityfocus"))
+                    classList.remove("utilityfocus");
+            }
+        };
         document.addEventListener("focusin", this._initHandler);
         document.addEventListener("click", this._initHandler);
+        document.addEventListener("mousedown", this._removeFocusClass);
+        document.addEventListener("keydown", this._addFocusClass);
     }
     FocusManager.prototype.getFocusId = function () {
         return this._activeWidgetId;
@@ -5640,7 +5663,7 @@ var Grid = /** @class */ (function (_super) {
         this._checkMarks();
         this.paint();
         dom_1.awaitRedraw().then(function () {
-            _this.config.keyNavigation && _this._initHotKey();
+            _this.config.keyNavigation && _this._initHotKey(true);
         });
     };
     Grid.prototype.addRowCss = function (rowId, css) {
@@ -6107,12 +6130,20 @@ var Grid = /** @class */ (function (_super) {
                         _this.data.update(item.id, (_a = {}, _a[col.id] = null, _a), true);
                     }
                 }
+                var initData = _this.data.getInitialData();
+                var startIndex = initData === null || initData === void 0 ? void 0 : initData.findIndex(function (item) { return item.id === data.start; });
+                var targetIndex = initData === null || initData === void 0 ? void 0 : initData.findIndex(function (item) { return item.id === data.target; });
+                if (startIndex && targetIndex > -1)
+                    initData === null || initData === void 0 ? void 0 : initData.splice(targetIndex, 0, initData === null || initData === void 0 ? void 0 : initData.splice(startIndex, 1)[0]);
+                _this.config.data = _this._prepareData(initData || _this.data.map(function (i) { return i; }));
+                _this.data.parse(_this.config.data);
+                for (var compare in _this._activeFilters) {
+                    _this.data.filter(_this._activeFilters[compare], { add: true });
+                }
             }
             else if (_this.config.dragItem === "column" || _this.config.dragItem === "both") {
                 _this.events.fire(types_1.GridEvents.afterColumnDrop, [data, events]);
             }
-            _this.config.data = _this._prepareData(_this.data.map(function (i) { return i; }));
-            _this.data.parse(_this.config.data);
         });
         this.events.on(ts_data_1.DragEvents.afterDrag, function (data, events) {
             updater({ $dragtarget: undefined });
@@ -6122,7 +6153,7 @@ var Grid = /** @class */ (function (_super) {
             else if (_this.config.dragItem === "column" || _this.config.dragItem === "both") {
                 _this.events.fire(types_1.GridEvents.afterColumnDrag, [data, events]);
             }
-            _this.config.data = _this._prepareData(_this.data instanceof Array ? _this.data.map(function (i) { return i; }) : _this.data);
+            _this.config.data = _this._prepareData(_this.data instanceof Array ? _this.data.map(function (i) { return i; }) : _this.data.getInitialData() || _this.data);
             _this.data.parse(_this.config.data);
         });
         // TODO: When introducing touch events, remove system events
@@ -6202,7 +6233,7 @@ var Grid = /** @class */ (function (_super) {
         });
         this.events.on(types_1.GridEvents.afterEditEnd, function (value, eRow, eCol) {
             var _a;
-            var _b;
+            var _b, _c;
             if (((_b = _this.config.$editable) === null || _b === void 0 ? void 0 : _b.editor) &&
                 (_this.config.$editable.col !== eCol.id || _this.config.$editable.row !== eRow.id))
                 return;
@@ -6219,7 +6250,9 @@ var Grid = /** @class */ (function (_super) {
             var item = _this.data.getItem(row);
             delete item.$emptyRow;
             if (value !== undefined) {
-                _this.data.update(row, __assign(__assign({}, item), (_a = {}, _a[col] = value, _a)));
+                var option = eCol.editorType === "select" || eCol.editorType === "combobox"
+                    ? (_c = eCol.options) === null || _c === void 0 ? void 0 : _c.find(function (item) { return item.id === value; }) : null;
+                _this.data.update(row, __assign(__assign({}, item), (_a = {}, _a[col] = (option === null || option === void 0 ? void 0 : option.value) || value, _a)));
             }
             _this.config.$editable = null;
             _this._checkFilters();
@@ -6629,13 +6662,17 @@ var Grid = /** @class */ (function (_super) {
     Grid.prototype._render = function () {
         this.paint();
     };
-    Grid.prototype._initHotKey = function () {
+    Grid.prototype._initHotKey = function (secondInit) {
+        if (secondInit === void 0) { secondInit = false; }
         var handlers = keys_1.getKeysHandlers(this);
         for (var key in handlers) {
-            this.keyManager.addHotKey(key, handlers[key]);
+            if (!this.keyManager.exist(key))
+                this.keyManager.addHotKey(key, handlers[key]);
         }
-        for (var key in this.config.hotkeys) {
-            this.keyManager.addHotKey(key, this.config.hotkeys[key]);
+        if (!secondInit) {
+            for (var key in this.config.hotkeys) {
+                this.keyManager.addHotKey(key, this.config.hotkeys[key]);
+            }
         }
     };
     return Grid;
@@ -6883,7 +6920,7 @@ var DataCollection = /** @class */ (function () {
             return this._copy(id, index, target, targetId);
         }
     };
-    DataCollection.prototype.move = function (id, index, target, targetId) {
+    DataCollection.prototype.move = function (id, index, target, targetId, newId) {
         var _this = this;
         if (id instanceof Array) {
             return id.map(function (elementId, key) {
@@ -6891,7 +6928,7 @@ var DataCollection = /** @class */ (function () {
             });
         }
         else {
-            return this._move(id, index, target, targetId);
+            return this._move(id, index, target, targetId, 0, newId);
         }
     };
     DataCollection.prototype.forEach = function (callback) {
@@ -7098,7 +7135,7 @@ var DataCollection = /** @class */ (function () {
         this.add(__assign(__assign({}, helpers_1.copyWithoutInner(this.getItem(id))), { id: newid }), index);
         return newid;
     };
-    DataCollection.prototype._move = function (id, index, target, targetId, key) {
+    DataCollection.prototype._move = function (id, index, target, targetId, key, newId) {
         if (!this.isDataLoaded()) {
             helpers_1.dhxWarning("the method doesn't work with lazyLoad");
             return;
@@ -7108,7 +7145,9 @@ var DataCollection = /** @class */ (function () {
         }
         if (target && target !== this && this.exists(id)) {
             var item = core_1.copy(this.getItem(id), true);
-            if (target.exists(id)) {
+            if (newId)
+                item.id = newId;
+            if ((!newId && target.exists(id)) || target.exists(newId)) {
                 item.id = core_1.uid();
             }
             if (targetId) {
@@ -7141,7 +7180,7 @@ var DataCollection = /** @class */ (function () {
             helpers_1.dhxError("Item " + obj.id + " already exist");
         }
         // todo: not ideal solution
-        if (this._initOrder) {
+        if (this._initOrder && !helpers_1.isTreeCollection(this)) {
             this._addToOrder(this._initOrder, obj, index);
         }
         this._addToOrder(this._order, obj, index);
@@ -9069,7 +9108,15 @@ var List = /** @class */ (function (_super) {
                 _this.editEnd(null);
             },
             enter: function (e) {
-                _this.selection.add(_this._focus);
+                var _a;
+                var selected = _this.selection.getItem();
+                var selectedId = selected instanceof Array ? (_a = selected[0]) === null || _a === void 0 ? void 0 : _a.id : selected === null || selected === void 0 ? void 0 : selected.id;
+                if (_this.config.editable && ((selected && selectedId === _this._focus) || !selected)) {
+                    _this.editItem(_this._focus);
+                }
+                else {
+                    _this.selection.add(_this._focus);
+                }
                 _this.events.fire(types_2.ListEvents.click, [_this._focus, e]);
             },
             "shift+enter": function (e) {
@@ -9570,7 +9617,7 @@ function getRows(config, rowsConfig) {
                 dom_1.el("div.dhx_grid-header-cell-text", {
                     role: "presentation",
                 }, [
-                    dom_1.el("span", __assign(__assign({ class: cellCss }, getInnerCellAriaAttrs(rowName, cell.text)), { style: { lineHeight: rowHeight + "px" }, ".innerHTML": cell.text })),
+                    dom_1.el("span", __assign(__assign({ class: cellCss }, getInnerCellAriaAttrs(rowName, cell.text)), { ".innerHTML": cell.text })),
                     resizable || null,
                 ]),
                 sortIconVisible && dom_1.el("div", { class: sortIconCss, "aria-hidden": "true" }),
@@ -13500,7 +13547,7 @@ var Timepicker = /** @class */ (function (_super) {
         var setHours = function (element) {
             var hour = validate(parseInt(element.value, 10), 23);
             element.value = hour.toString();
-            _this._minutesSlider.setValue(hour);
+            _this._hoursSlider.setValue(hour);
         };
         this._handlers = {
             onchange: {
@@ -14213,6 +14260,9 @@ var TreeCollection = /** @class */ (function (_super) {
             this.restoreOrder();
             return;
         }
+        if (!this._initOrder) {
+            this._initOrder = this._order;
+        }
         if (!this._initChilds) {
             this._initChilds = this._childs;
         }
@@ -14548,6 +14598,9 @@ var TreeCollection = /** @class */ (function (_super) {
                     delete this._initChilds[parent_1];
                 }
             }
+            if (this._initOrder && this._initOrder.length) {
+                this._initOrder = this._initOrder.filter(function (el) { return el.id !== id; });
+            }
             this._fastDeleteChilds(this._childs, id);
             if (this._initChilds) {
                 this._fastDeleteChilds(this._initChilds, id);
@@ -14724,6 +14777,7 @@ var ts_grid_1 = __webpack_require__(34);
 var CollectionStore_1 = __webpack_require__(79);
 var types_1 = __webpack_require__(8);
 var helpers_1 = __webpack_require__(9);
+var core_1 = __webpack_require__(0);
 function getPosition(e) {
     var y = e.clientY;
     var element = html_1.locateNode(e);
@@ -14912,8 +14966,11 @@ var DragManager = /** @class */ (function () {
             var from = {
                 id: start,
                 component: this._transferData.component,
+                newId: null,
             };
             this._move(from, to);
+            if (from.newId && from.component !== to.component)
+                data.start = from.newId;
             to.component.events.fire(types_1.DragEvents.afterDrop, [data, e]);
         }
         this._endDrop(e);
@@ -15117,6 +15174,8 @@ var DragManager = /** @class */ (function () {
                     index = toData.getIndex(to.id) - 1;
                 }
                 else {
+                    if (toData.getIndex(from.id) > -1)
+                        from.newId = core_1.uid();
                     index = toData.getIndex(to.id);
                 }
         }
@@ -15143,7 +15202,7 @@ var DragManager = /** @class */ (function () {
                 });
             }
             else {
-                fromData.move(from.id, index, toData, componentId);
+                fromData.move(from.id, index, toData, componentId, from.newId);
             }
         }
     };
@@ -16150,7 +16209,9 @@ var SelectEditor = /** @class */ (function () {
         }
     };
     SelectEditor.prototype.toHTML = function () {
-        var content = this._cell.col.options || [];
+        var content = this._cell.col.options.map(function (item) {
+            return typeof item === "string" ? { id: "" + item, value: item } : item;
+        }) || [];
         var selected = this._cell.row[this._cell.col.id];
         if (this._input) {
             selected = this._input.options[this._input.selectedIndex].value;
@@ -16158,7 +16219,8 @@ var SelectEditor = /** @class */ (function () {
         var options = content.map(function (item) {
             return dom_1.el("option", {
                 selected: item === selected,
-            }, item);
+                value: item.id,
+            }, item.value);
         });
         this._config.$editable.editor = this;
         return dom_1.el("select.dhx_cell-editor.dhx_cell-editor__select", {
@@ -17864,6 +17926,11 @@ var ProGrid = /** @class */ (function (_super) {
         var _this = this;
         _super.prototype._setEventHandlers.call(this);
         this.events.on(types_1.GridEvents.headerCellMouseDown, function (col, e) {
+            var _a;
+            var targetRow = html_1.locateNodeByClassName(e, "dhx_header-row");
+            var targetRowIndex = targetRow && targetRow.getAttribute("aria-rowindex");
+            if ((_a = col.header[Number(targetRowIndex) - 1]) === null || _a === void 0 ? void 0 : _a.content)
+                return;
             if (!e.targetTouches) {
                 _this._dragStartColumn(e, col);
             }
