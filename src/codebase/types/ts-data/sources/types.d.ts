@@ -212,7 +212,8 @@ export declare enum DataEvents {
     load = "load",
     loadError = "loaderror",
     beforeLazyLoad = "beforelazyload",
-    afterLazyLoad = "afterlazyload"
+    afterLazyLoad = "afterlazyload",
+    dataRequest = "dataRequest"
 }
 export interface IDataEventsHandlersMap {
     [key: string]: (...args: any[]) => any;
@@ -226,6 +227,7 @@ export interface IDataEventsHandlersMap {
     [DataEvents.loadError]: (response: any) => void;
     [DataEvents.beforeLazyLoad]: () => boolean | void;
     [DataEvents.afterLazyLoad]: (from: number, count: number) => void;
+    [DataEvents.dataRequest]: (from: number, to: number) => void;
 }
 export declare enum DragEvents {
     beforeDrag = "beforeDrag",

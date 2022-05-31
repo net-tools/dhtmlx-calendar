@@ -1,9 +1,9 @@
 import { IEventSystem } from "../../ts-common/events";
 import { IKeyManager } from "../../ts-common/KeyManager";
 import { IAlign } from "../../ts-common/html";
-import { IDataCollection, IDragConfig, ICsvDriverConfig, IDataItem, IDragInfo } from "../../ts-data";
+import { IDataCollection, IDragConfig, ICsvDriverConfig, IDataItem, IDragInfo, DataCollection } from "../../ts-data";
 import { Exporter } from "./Exporter";
-import { IComboFilterConfig, Combobox } from "../../ts-combobox";
+import { Combobox } from "../../ts-combobox";
 import { IHandlers, Id } from "../../ts-common/types";
 import { ScrollView } from "../../ts-common/ScrollView";
 export interface IGridConfig extends IDragConfig {
@@ -16,6 +16,7 @@ export interface IGridConfig extends IDragConfig {
     sortable?: boolean;
     rowCss?: (row: IRow) => string;
     leftSplit?: number;
+    topSplit?: number;
     selection?: ISelectionType;
     multiselection?: boolean;
     dragItem?: IDragType;
@@ -135,6 +136,9 @@ export interface IProGrid extends IGrid {
     scrollView: ScrollView;
 }
 export declare type EditorType = "input" | "select" | "datePicker" | "checkbox" | "combobox" | "multiselect" | "textarea";
+export interface IComboEditorConfig {
+    newOptions?: boolean;
+}
 export interface ICellRect extends ICoords, ISizes {
 }
 export declare type colType = "string" | "number" | "boolean" | "date" | "percent" | any;
@@ -148,6 +152,7 @@ export interface ICol {
     mark?: IMark | MarkFunction;
     type?: colType;
     editorType?: EditorType;
+    editorConfig?: IComboEditorConfig;
     editable?: boolean;
     resizable?: boolean;
     sortable?: boolean;
@@ -189,9 +194,19 @@ export interface IHeader {
     css?: any;
     content?: fixedRowContent | footerMethods;
     filterConfig?: IComboFilterConfig;
+    customFilter?: (item: any, input: string) => boolean;
     align?: IAlign;
     headerSort?: boolean;
     sortAs?: SortFunction;
+}
+export interface IComboFilterConfig {
+    data?: DataCollection<any> | any[];
+    readonly?: boolean;
+    template?: (item: any) => string;
+    filter?: (item: any, input: string) => boolean;
+    placeholder?: string;
+    virtual?: boolean;
+    multiselection?: boolean;
 }
 export declare type SortFunction = (cellValue: any) => string | number;
 export interface IFooter {

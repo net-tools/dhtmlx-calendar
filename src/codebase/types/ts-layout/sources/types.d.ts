@@ -33,6 +33,8 @@ export interface ICellConfig {
     full?: boolean;
     init?: (c: ICell, cfg: ICellConfig | IView) => void;
     $fixed?: boolean;
+    $autoWidth?: boolean;
+    $autoHeight?: boolean;
 }
 export interface ILayoutConfig extends ICellConfig {
     rows?: ICellConfig[] | ILayoutConfig[];
