@@ -51,6 +51,7 @@ export declare class Grid extends View implements IGrid {
     getHeaderFilter(colId: Id): HTMLElement | Combobox;
     /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
     edit(rowId: Id, colId: Id, editorType?: EditorType): void;
+    paint(): void;
     protected _createView(): any;
     protected _parseColumns(configChanged?: boolean): void;
     protected _parseData(): void;

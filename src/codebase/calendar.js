@@ -1,7 +1,7 @@
 /*
 @license
 
-dhtmlxCalendar v.7.3.3 GPL
+dhtmlxCalendar v.7.3.7 GPL
 
 This software is covered by GPL license.
 To use it in non-GPL project, you need obtain Commercial or Enterprise license
@@ -358,7 +358,8 @@ exports.getStringWidth = function (value, config) {
     if (config.font)
         ctx.font = config.font;
     var width = ctx.measureText(value).width;
-    canvas.remove();
+    if (!html_1.isIE())
+        canvas.remove();
     return width;
 };
 exports.rgbToHex = function (color) {
@@ -482,7 +483,7 @@ function eventHandler(prepare, hash, afterCall) {
                     var css = cssstring.split(" ");
                     for (var j = 0; j < keys.length; j++) {
                         if (css.includes(keys[j])) {
-                            if (hash[keys[j]](ev, data) === false)
+                            if (hash[keys[j]](ev, data) === false || ev.cancelBubble)
                                 return false;
                             else
                                 break outer_block;
@@ -1452,36 +1453,16 @@ function countColumns(config, columns) {
 }
 exports.countColumns = countColumns;
 function calculatePositions(width, height, scroll, conf, data) {
+    var _a;
     var columns = conf.columns || [];
     var columnsLength = columns.length;
     var rows = data || [];
     var rowsLength = rows.length;
-    var maxWidth = -Infinity;
-    var minWidth = +Infinity;
-    for (var index = 0; index < columnsLength; index++) {
-        if (columns[index].$width > maxWidth)
-            maxWidth = columns[index].$width;
-        if (columns[index].$width < minWidth)
-            minWidth = columns[index].$width;
-    }
-    var maxHeight = -Infinity;
-    var minHeight = +Infinity;
-    for (var index = 0; index < rowsLength; index++) {
-        if (rows[index].$height > maxHeight)
-            maxHeight = rows[index].$height;
-        if (rows[index].$height < minHeight)
-            minHeight = rows[index].$height;
-    }
-    minHeight = minHeight < conf.rowHeight ? minHeight : conf.rowHeight;
-    var xReserve = Math.round(maxWidth / minWidth);
-    var yReserve = Math.round(maxHeight / minHeight);
-    var avrColWidth = conf.$totalWidth / columnsLength;
-    var colPerPage = Math.round(width / avrColWidth);
-    var avrRowHeight = conf.$totalHeight / rowsLength;
-    var rowPerPage = Math.round(height / minHeight);
+    var leftSplit = (_a = conf.leftSplit) !== null && _a !== void 0 ? _a : 0;
     var x = 0;
     var scrollLeft = scroll.left;
-    for (var i = 0; i < columns.length; i++) {
+    var avrColWidth = conf.$totalWidth / columnsLength;
+    for (var i = 0; i < columnsLength; i++) {
         var col = columns[i];
         scrollLeft = scrollLeft - col.$width;
         if (scrollLeft + avrColWidth / 2 > 0) {
@@ -1493,7 +1474,8 @@ function calculatePositions(width, height, scroll, conf, data) {
     }
     var y = 0;
     var scrollTop = scroll.top;
-    for (var i = 0; i < rows.length; i++) {
+    var avrRowHeight = conf.$totalHeight / rowsLength;
+    for (var i = 0; i < rowsLength; i++) {
         var row = rows[i];
         scrollTop = scrollTop - row.$height;
         if (scrollTop + avrRowHeight / 2 > 0) {
@@ -1503,10 +1485,41 @@ function calculatePositions(width, height, scroll, conf, data) {
             break;
         }
     }
-    var xStart = x - xReserve >= 0 ? x - xReserve : 0;
-    var xEnd = x + colPerPage + xReserve;
+    var sizeByWidth = 0;
+    var itemsTotalByWidth = 0;
+    var maxWidth = -Infinity;
+    var minWidth = +Infinity;
+    for (var index = 0; index < columnsLength; index++) {
+        if (index >= x && sizeByWidth < width) {
+            sizeByWidth += columns[index].$width;
+            itemsTotalByWidth++;
+        }
+        if (columns[index].$width > maxWidth)
+            maxWidth = columns[index].$width;
+        if (columns[index].$width < minWidth)
+            minWidth = columns[index].$width;
+    }
+    var sizeByHeight = 0;
+    var itemsTotalByHeight = 0;
+    var maxHeight = -Infinity;
+    var minHeight = +Infinity;
+    for (var index = 0; index < rowsLength; index++) {
+        if (index >= y && sizeByHeight < height) {
+            sizeByHeight += rows[index].$height;
+            itemsTotalByHeight++;
+        }
+        if (rows[index].$height > maxHeight)
+            maxHeight = rows[index].$height;
+        if (rows[index].$height < minHeight)
+            minHeight = rows[index].$height;
+    }
+    minHeight = minHeight < conf.rowHeight ? minHeight : conf.rowHeight;
+    var xReserve = Math.round(maxWidth / minWidth);
+    var yReserve = Math.round(maxHeight / minHeight);
+    var xStart = x - xReserve >= leftSplit ? x - xReserve : leftSplit;
+    var xEnd = x + itemsTotalByWidth + xReserve;
     var yStart = y - yReserve >= 0 ? y - yReserve : 0;
-    var yEnd = y + rowPerPage + yReserve;
+    var yEnd = y + itemsTotalByHeight + yReserve;
     return {
         xStart: xStart,
         xEnd: xEnd,
@@ -1668,34 +1681,40 @@ exports.getMaxColsWidth = function (rows, cols, config, target) {
     return totalColumns;
 };
 function toFormat(value, type, format) {
+    if (typeof value === "boolean") {
+        return value.toString();
+    }
     if (!value && typeof value !== "number") {
         return value;
     }
     var formatTemplate = function (type) {
         value = value.toString();
         var result;
+        var fractional;
+        var delimiter;
+        var truncNumber = Math.trunc(Number(value));
         var template = format
             .replace(/#+/g, "#")
             .split("#")
             .filter(function (i) { return i; });
-        value = type === "percent" ? (Number(value) * 100).toString() : value;
-        var truncNumber = Math.trunc(Number(value));
-        var trunc = "" + (value < 0 && Math.abs(truncNumber) === 0 ? "-" : "") + truncNumber;
         var formatFractionLength = format.match(/0/g) && format.match(/0/g).length;
-        var truncTemplate = template.find(function (i) { return !i.includes("0"); });
-        result = truncTemplate ? trunc.replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1" + truncTemplate) : trunc;
+        value = type === "percent" ? (Number(value) * 100).toString() : value;
         if (formatFractionLength) {
-            var delimiter = template.find(function (i) { return i.includes("0"); }).replace(/0+/g, "");
             var truncFractional = value.split(".")[1] || "0";
-            var fractional = Number("0." + truncFractional).toFixed(formatFractionLength);
-            if (Number(fractional) >= 1)
-                (result++).toString();
+            delimiter = template.find(function (i) { return i.includes("0"); }).replace(/0+/g, "");
+            fractional = Number("0." + truncFractional).toFixed(formatFractionLength);
+            if (Number(fractional) >= 1) {
+                truncNumber++;
+            }
             fractional = fractional
                 .toString()
                 .split(".")[1]
                 .padEnd(formatFractionLength, "0");
-            result += delimiter + fractional;
         }
+        var trunc = "" + (value < 0 && Math.abs(truncNumber) === 0 ? "-" : "") + truncNumber;
+        var truncTemplate = template.find(function (i) { return !i.includes("0"); });
+        result = truncTemplate ? trunc.replace(/(\d)(?=(\d{3})+(\D|$))/g, "$1" + truncTemplate) : trunc;
+        result += (delimiter || "") + (fractional || "");
         return type === "percent" ? result + "%" : result;
     };
     switch (type) {
@@ -1726,7 +1745,7 @@ exports.toFormat = toFormat;
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, setImmediate) {(function () {
-  global = this
+  global = typeof window !== 'undefined' ? window : this
 
   var queueId = 1
   var queue = {}
@@ -2224,6 +2243,10 @@ var setFormatters = {
         var check = /(^([0-5][0-9])$)/i.test(value);
         check ? date.setSeconds(Number(value)) : date.setSeconds(Number(0));
     },
+    "%u": function (date, value) {
+        var check = /(^([0-9][0-9][0-9])$)/i.test(value);
+        check ? date.setMilliseconds(Number(value)) : date.setMilliseconds(Number(0));
+    },
     "%a": function (date, value) {
         if (value === "pm") {
             date.setHours(date.getHours() + 12);
@@ -2410,12 +2433,20 @@ var DateHelper = /** @class */ (function () {
         var firstYear = y - (y % 12);
         return core_1.range(firstYear, firstYear + 11);
     };
+    DateHelper.getDayOrdinal = function (d) {
+        var dayMS = 24 * 60 * 60 * 1000;
+        return (d.valueOf() - DateHelper.yearStart(d).valueOf()) / dayMS;
+    };
     DateHelper.getWeekNumber = function (d) {
         if (d.getDay() !== 6) {
             d = DateHelper.addDay(d, 6 - d.getDay());
         }
         var dayMS = 24 * 60 * 60 * 1000;
-        var ordinal = (d.valueOf() - DateHelper.yearStart(d).valueOf()) / dayMS;
+        var ordinal = DateHelper.getDayOrdinal(d);
+        if (ordinal - d.getDay() < 0) {
+            d = new Date(d.getFullYear() - 1, 12, 0);
+            ordinal = DateHelper.getDayOrdinal(d);
+        }
         return Math.floor((ordinal - d.getDay() + 10) / 7);
     };
     DateHelper.isSameDay = function (d1, d2) {
@@ -2522,7 +2553,7 @@ var FocusManager = /** @class */ (function () {
             }
         };
         document.addEventListener("focusin", this._initHandler);
-        document.addEventListener("click", this._initHandler);
+        document.addEventListener("pointerdown", this._initHandler);
         document.addEventListener("mousedown", this._removeFocusClass);
         document.addEventListener("keydown", this._addFocusClass);
     }
@@ -2560,6 +2591,7 @@ var SelectionEvents;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+var core_1 = __webpack_require__(0);
 function getWidth(columns, colspan, index) {
     var cols = columns.filter(function (_a) {
         var hidden = _a.hidden;
@@ -2590,6 +2622,27 @@ function getHeight(dataRows, rowspan, index) {
     }, 0);
 }
 exports.getHeight = getHeight;
+function getSpan(rowId, colId, conf) {
+    if (conf.spans) {
+        var rowIndex_1 = conf.data.findIndex(function (item) { return item.id.toString() === rowId.toString(); });
+        var colIndex_1 = conf.columns.findIndex(function (col) { return col.id.toString() === colId; });
+        var index = core_1.findIndex(conf.spans, function (span) {
+            var startRowInd = conf.data.findIndex(function (item) { return item.id.toString() === span.row.toString(); });
+            var startColInd = conf.columns.findIndex(function (col) { return col.id.toString() === span.column.toString(); });
+            var rows = {
+                start: startRowInd,
+                end: span.rowspan ? startRowInd + span.rowspan : startRowInd + 1,
+            };
+            var cols = {
+                start: startColInd,
+                end: span.colspan ? startColInd + span.colspan : startColInd + 1,
+            };
+            return (rowIndex_1 >= rows.start && rowIndex_1 < rows.end && colIndex_1 >= cols.start && colIndex_1 < cols.end);
+        });
+        return conf.spans[index];
+    }
+}
+exports.getSpan = getSpan;
 
 
 /***/ }),
@@ -2626,16 +2679,11 @@ function handleMouse(rowStart, colStart, conf, type, e) {
         return;
     }
     var rowNode = target ? target.parentNode : targetSpan;
-    var bodyNode = rowNode.parentNode;
-    var colIndex = target
-        ? Array.prototype.indexOf.call(rowNode.childNodes, target)
-        : conf.columns.findIndex(function (column) { return column.id === targetSpan.getAttribute("data-dhx-col-id"); });
+    var colId = (target || targetSpan).getAttribute("data-dhx-col-id");
     var columns = conf.columns.filter(function (col) { return !col.hidden; });
-    var col = columns[colStart + colIndex];
-    var rowIndex = target
-        ? Array.prototype.indexOf.call(bodyNode.childNodes, rowNode)
-        : Number(targetSpan.getAttribute("data-dhx-id")) - 1;
-    var row = conf.data["" + ((target ? rowStart : 0) + rowIndex)];
+    var col = columns.find(function (column) { return column.id === colId; });
+    var rowId = rowNode.getAttribute("data-dhx-id");
+    var row = conf.data.find(function (r) { return r.id.toString() === rowId; });
     var systemEvent = type.toLocaleLowerCase().includes("touch");
     if (systemEvent) {
         conf._events.fire(type, [row, col, e]);
@@ -2643,6 +2691,36 @@ function handleMouse(rowStart, colStart, conf, type, e) {
     else {
         conf.events.fire(type, [row, col, e]);
     }
+}
+function isLastRender(conf, row, col, includeSpans) {
+    if (includeSpans === void 0) { includeSpans = true; }
+    var leftSplit = conf.leftSplit, topSplit = conf.topSplit, columns = conf.columns, data = conf.data, spans = conf.spans, $renderFrom = conf.$renderFrom;
+    var rowIndex = data.indexOf(row);
+    var colIndex = columns.indexOf(col);
+    var fixedByCol = leftSplit && colIndex < leftSplit;
+    var fixedByRow = topSplit && rowIndex < topSplit;
+    var isFixed = fixedByCol || fixedByRow;
+    var isSpaned = includeSpans &&
+        !!(spans === null || spans === void 0 ? void 0 : spans.find(function (span) {
+            var spanRowIndex = data.findIndex(function (r) { return r.id == span.row; });
+            var spanColIndex = (columns === null || columns === void 0 ? void 0 : columns.findIndex(function (c) { return c.id == span.column; })) || -1;
+            var byRow = spanRowIndex > -1 &&
+                rowIndex >= spanRowIndex &&
+                rowIndex < spanRowIndex + (span.rowspan || 0);
+            var byCol = spanColIndex > -1 &&
+                colIndex >= spanColIndex &&
+                colIndex < spanColIndex + (span.colspan || 0);
+            return byRow && byCol;
+        }));
+    var isLastRender = !isSpaned && !isFixed;
+    if (!isSpaned && isFixed) {
+        if (($renderFrom === "fixedCols" && !fixedByRow) ||
+            ($renderFrom === "fixedRows" && !fixedByCol) ||
+            $renderFrom === "both") {
+            isLastRender = true;
+        }
+    }
+    return { render: isLastRender, isFixed: isFixed };
 }
 function getHandlers(row, column, conf) {
     return {
@@ -2708,21 +2786,8 @@ function getCells(conf) {
     var pos = conf.$positions;
     var data = conf.data ? conf.data.slice(pos.yStart, pos.yEnd) : [];
     var columns = conf.columns.slice(pos.xStart, pos.xEnd);
-    var leftSplit = conf.leftSplit, topSplit = conf.topSplit;
     var selectedCell = conf.selection.getCell();
     var isFirstTabindex = true;
-    var calledFrom = "render";
-    var fixedCols = leftSplit && leftSplit === conf.columns.length;
-    var fixedRows = topSplit && topSplit === conf.data.length;
-    if (fixedCols) {
-        calledFrom = "fixedCols";
-    }
-    if (fixedRows) {
-        calledFrom = "fixedRows";
-    }
-    if (fixedCols && fixedRows) {
-        calledFrom = "both";
-    }
     return data.map(function (row, index) {
         var isLastRow = data.length - 1 === index;
         var rowCss = "";
@@ -2812,26 +2877,16 @@ function getCells(conf) {
                     var isEditable = conf.$editable &&
                         conf.$editable.row === row.id &&
                         conf.$editable.col === col.id;
+                    var leftSplit = conf.leftSplit, columns_1 = conf.columns;
+                    var _b = isLastRender(conf, row, col), render = _b.render, isFixed = _b.isFixed;
                     if (isEditable ||
                         (col.type === "boolean" &&
                             ((conf.editable && ((_a = col.editable) !== null && _a !== void 0 ? _a : true)) ||
                                 (!conf.editable && col.editable)))) {
-                        var leftSplit_1 = conf.leftSplit, topSplit_1 = conf.topSplit, columns_1 = conf.columns, data_2 = conf.data;
-                        var fixedByCol = leftSplit_1 && columns_1.indexOf(col) < leftSplit_1;
-                        var fixedByRow = topSplit_1 && data_2.indexOf(row) < topSplit_1;
-                        var isFixed = fixedByCol || fixedByRow;
-                        var isLastRender = false;
-                        if (isFixed) {
-                            if ((calledFrom === "fixedCols" && !fixedByRow) ||
-                                (calledFrom === "fixedRows" && !fixedByCol) ||
-                                calledFrom === "both") {
-                                isLastRender = true;
-                            }
-                        }
-                        if (!isFixed || isLastRender) {
+                        if (!isFixed || render) {
                             content = getEditorCell(row, col, conf).toHTML();
                             css += " dhx_grid-cell__editable";
-                            if (leftSplit_1 === columns_1.indexOf(col) + 1) {
+                            if (leftSplit === columns_1.indexOf(col) + 1) {
                                 colWidth -= 1;
                             }
                         }
@@ -2857,13 +2912,14 @@ function getCells(conf) {
                     return dom_1.el(".dhx_grid-cell", __assign({ class: css, style: {
                             width: colWidth,
                             height: row.$height + "px",
-                        }, _key: col.id, "data-dhx-col-id": col.id }, getCellAriaAttrs(col, pos.xStart + colIndex + 1, index, conf.editable)), [content]);
+                        }, _key: col.id, "data-dhx-col-id": col.id }, getCellAriaAttrs(col, pos.xStart + colIndex + 1, index, conf.editable)), [render && content]);
                 }
             }));
     });
 }
 exports.getCells = getCells;
 function getSpans(config, frozen) {
+    var _a;
     var spanCells = [];
     var pos = config.$positions;
     var columns = config.columns;
@@ -2922,6 +2978,22 @@ function getSpans(config, frozen) {
         css += currCol.align ? " dhx_align-" + currCol.align : " dhx_align-left";
         var width = spanWidth > 1 ? cells_1.getWidth(columns, spanWidth, colIndex) : currCol.$width;
         var height = spanHeight > 1 ? cells_1.getHeight(rows, spanHeight, rowIndex) : currRow.$height;
+        var isEditable = config.$editable && config.$editable.row === row && config.$editable.col === col;
+        if (isEditable ||
+            (currCol.type === "boolean" &&
+                ((config.editable && ((_a = currCol.editable) !== null && _a !== void 0 ? _a : true)) || (!config.editable && currCol.editable)))) {
+            var leftSplit = config.leftSplit, topSplit = config.topSplit;
+            var fixedByCol = leftSplit && colIndex < leftSplit;
+            var fixedByRow = topSplit && rowIndex < topSplit;
+            var isFixed = fixedByCol || fixedByRow;
+            if (!isFixed) {
+                content = getEditorCell(currRow, currCol, config).toHTML();
+                css += " dhx_span__editable";
+                if (leftSplit === colIndex + 1) {
+                    width -= 1;
+                }
+            }
+        }
         spanCells.push(dom_1.el("div", __assign({ class: css, style: {
                 width: width,
                 height: height,
@@ -3159,6 +3231,9 @@ var KeyManager = /** @class */ (function () {
     KeyManager.prototype.exist = function (key) {
         var code = getHotKeyCode(key);
         return !!this._keysStorage[code];
+    };
+    KeyManager.prototype.getKeyStorageLength = function () {
+        return Object.keys(this._keysStorage).length;
     };
     return KeyManager;
 }());
@@ -3569,7 +3644,7 @@ var ScrollView = /** @class */ (function () {
         var _a, _b;
         var _this = this;
         if (uid === void 0) { uid = ""; }
-        if (this._scrollWidth === 0 || !this.config.enable || !element.length) {
+        if (!this.config.enable || !element.length) {
             return element;
         }
         if (uid)
@@ -3895,6 +3970,9 @@ var Calendar = /** @class */ (function (_super) {
             case "year":
                 _this._currentViewMode = "year";
                 break;
+            case "timepicker":
+                _this._currentViewMode = _this.config.timePicker ? "timepicker" : "calendar";
+                break;
             default:
                 _this._currentViewMode = "calendar";
         }
@@ -4212,7 +4290,17 @@ var Calendar = /** @class */ (function (_super) {
     Calendar.prototype._getData = function (date) {
         var _this = this;
         this._isSelectedInCurrentRange = false;
-        var firstDay = this.config.weekStart === "monday" ? 1 : 0;
+        var firstDay;
+        switch (this.config.weekStart) {
+            case "saturday":
+                firstDay = -1;
+                break;
+            case "monday":
+                firstDay = 1;
+                break;
+            default:
+                firstDay = 0;
+        }
         var first = date_1.DateHelper.weekStart(date_1.DateHelper.monthStart(date), firstDay);
         var data = [];
         var weeksCount = 6;
@@ -4308,7 +4396,17 @@ var Calendar = /** @class */ (function (_super) {
         var _this = this;
         var date = this._currentDate;
         var _a = this.config, weekStart = _a.weekStart, thisMonthOnly = _a.thisMonthOnly, css = _a.css, timePicker = _a.timePicker, width = _a.width;
-        var weekDays = weekStart === "monday" ? __spreadArrays(date_1.locale.daysShort.slice(1), [date_1.locale.daysShort[0]]) : date_1.locale.daysShort;
+        var weekDays;
+        switch (weekStart) {
+            case "saturday":
+                weekDays = __spreadArrays([date_1.locale.daysShort[6]], date_1.locale.daysShort.slice(0, -1));
+                break;
+            case "monday":
+                weekDays = __spreadArrays(date_1.locale.daysShort.slice(1), [date_1.locale.daysShort[0]]);
+                break;
+            default:
+                weekDays = date_1.locale.daysShort;
+        }
         var weekDaysHeader = weekDays.map(function (day) { return dom_1.el(".dhx_calendar-weekday", day); });
         var data = this._getData(date);
         var isFirstItem = true;
@@ -4870,8 +4968,13 @@ var Cell = /** @class */ (function (_super) {
                     _this.config.headerIcon ||
                     _this.config.headerImage)
                 : _this.config.full;
+        _this._afterWindowResized = _this._resizedWindow.bind(_this);
         _this._initHandlers();
         _this.id = _this.config.id || core_1.uid();
+        if (_this._isXDirection() && !config.width)
+            config.$autoWidth = true;
+        if (!_this._isXDirection() && !config.height)
+            config.$autoHeight = true;
         return _this;
     }
     Cell.prototype.paint = function () {
@@ -4980,6 +5083,7 @@ var Cell = /** @class */ (function (_super) {
     };
     Cell.prototype.destructor = function () {
         this.events && this.events.clear();
+        window.removeEventListener("resize", this._afterWindowResized);
         this.config = this.events = this.id = null;
         this._parent = this._handlers = this._uid = this._disabled = this._resizerHandlers = null;
         this.unmount();
@@ -5163,6 +5267,7 @@ var Cell = /** @class */ (function (_super) {
     };
     Cell.prototype._initHandlers = function () {
         var _this = this;
+        window.addEventListener("resize", this._afterWindowResized);
         this._handlers = {
             enterCollapse: function (e) {
                 if (e.keyCode === 13) {
@@ -5200,12 +5305,17 @@ var Cell = /** @class */ (function (_super) {
             margin: null,
             collapsedSize: null,
         };
-        var resizeMove = function (event) {
+        var resizeMove = function (event, startCoords) {
+            if (startCoords === void 0) { startCoords = { x: 0, y: 0 }; }
             if (!blockOpts.isActive) {
                 return;
             }
-            var clientX = event.targetTouches ? event.targetTouches[0].clientX : event.clientX;
-            var clientY = event.targetTouches ? event.targetTouches[0].clientY : event.clientY;
+            var clientX = event.targetTouches
+                ? event.targetTouches[0].clientX
+                : event.clientX + startCoords.x;
+            var clientY = event.targetTouches
+                ? event.targetTouches[0].clientY
+                : event.clientY + startCoords.y;
             var newValue = blockOpts.xLayout
                 ? clientX - blockOpts.range.min + window.pageXOffset
                 : clientY - blockOpts.range.min + window.pageYOffset;
@@ -5223,16 +5333,25 @@ var Cell = /** @class */ (function (_super) {
             _this.paint();
             _this.events.fire(types_1.LayoutEvents.resize, [_this.id]);
         };
+        var iframesInfo = {};
         var resizeEnd = function (event) {
             blockOpts.isActive = false;
             document.body.classList.remove("dhx_no-select--resize");
             if (!event.targetTouches) {
                 document.removeEventListener("mouseup", resizeEnd);
                 document.removeEventListener("mousemove", resizeMove);
+                for (var index in iframesInfo) {
+                    iframesInfo[index].node.contentWindow.document.removeEventListener("mouseup", resizeEnd);
+                    iframesInfo[index].node.contentWindow.document.removeEventListener("mousemove", iframesInfo[index].listener);
+                }
             }
             else {
                 document.removeEventListener("touchend", resizeEnd);
                 document.removeEventListener("touchmove", resizeMove);
+                for (var index in iframesInfo) {
+                    iframesInfo[index].node.contentWindow.document.removeEventListener("touchend", resizeEnd);
+                    iframesInfo[index].node.contentWindow.document.removeEventListener("touchmove", iframesInfo[index].listener);
+                }
             }
             _this.events.fire(types_1.LayoutEvents.afterResizeEnd, [_this.id]);
         };
@@ -5272,11 +5391,45 @@ var Cell = /** @class */ (function (_super) {
                 resizeStart(e);
                 document.addEventListener("mouseup", resizeEnd);
                 document.addEventListener("mousemove", resizeMove);
+                var iframes = document.querySelectorAll("iframe");
+                if (iframes.length) {
+                    iframes.forEach(function (iframe, index) {
+                        var iframeCoords = {
+                            x: iframe.getBoundingClientRect().x,
+                            y: iframe.getBoundingClientRect().y,
+                        };
+                        iframesInfo[index] = {
+                            node: iframe,
+                            listener: function (event) { return resizeMove(event, iframeCoords); },
+                        };
+                    });
+                    for (var index in iframesInfo) {
+                        iframesInfo[index].node.contentWindow.document.addEventListener("mouseup", resizeEnd);
+                        iframesInfo[index].node.contentWindow.document.addEventListener("mousemove", iframesInfo[index].listener);
+                    }
+                }
             },
             ontouchstart: function (e) {
                 resizeStart(e);
                 document.addEventListener("touchend", resizeEnd);
                 document.addEventListener("touchmove", resizeMove);
+                var iframes = document.querySelectorAll("iframe");
+                if (iframes.length) {
+                    iframes.forEach(function (iframe, index) {
+                        var iframeCoords = {
+                            x: iframe.getBoundingClientRect().x,
+                            y: iframe.getBoundingClientRect().y,
+                        };
+                        iframesInfo[index] = {
+                            node: iframe,
+                            listener: function (event) { return resizeMove(event, iframeCoords); },
+                        };
+                    });
+                    for (var index in iframesInfo) {
+                        iframesInfo[index].node.contentWindow.document.addEventListener("touchend", resizeEnd);
+                        iframesInfo[index].node.contentWindow.document.addEventListener("touchmove", iframesInfo[index].listener);
+                    }
+                }
             },
             ondragstart: function (e) { return e.preventDefault(); },
         };
@@ -5330,12 +5483,13 @@ var Cell = /** @class */ (function (_super) {
         else
             return nextCell;
     };
-    Cell.prototype._getAnyFlexCell = function () {
+    Cell.prototype._getAnyFlexCell = function (selfInclude) {
         var _this = this;
+        if (selfInclude === void 0) { selfInclude = false; }
         var parent = this._parent;
         var prop = this._isXDirection() ? "$autoWidth" : "$autoHeight";
-        var cells = parent._cells.filter(function (cell) { return cell.config[prop] === true && cell !== _this; });
-        return cells.length ? cells[cells.length - 1] : false;
+        var cells = parent === null || parent === void 0 ? void 0 : parent._cells.filter(function (cell) { return cell.config[prop] === true && (selfInclude ? true : cell.id !== _this.id); });
+        return (cells === null || cells === void 0 ? void 0 : cells.length) ? cells[cells.length - 1] : false;
     };
     Cell.prototype._getResizerView = function () {
         return this._parent.getRefs("resizer_" + this._uid);
@@ -5367,10 +5521,8 @@ var Cell = /** @class */ (function (_super) {
             autoWidth = true;
         if (config.height === "content")
             autoHeight = true;
-        if (this._isXDirection() && !config.width)
-            config.$autoWidth = true;
-        if (!this._isXDirection() && !config.height)
-            config.$autoHeight = true;
+        // if (this._isXDirection() && !config.width) config.$autoWidth = true;
+        // if (!this._isXDirection() && !config.height) config.$autoHeight = true;
         var _a = config, width = _a.width, height = _a.height, cols = _a.cols, rows = _a.rows, minWidth = _a.minWidth, minHeight = _a.minHeight, maxWidth = _a.maxWidth, maxHeight = _a.maxHeight, gravity = _a.gravity, collapsed = _a.collapsed, $fixed = _a.$fixed;
         var gravityNumber = Math.sign(gravity) === -1 ? 0 : gravity;
         if (typeof gravity === "boolean") {
@@ -5389,9 +5541,9 @@ var Cell = /** @class */ (function (_super) {
         }
         var grow = fixed ? 0 : gravityNumber || 1;
         var fillSpace = this._isXDirection() ? "x" : "y";
-        if (minWidth !== undefined)
+        if (minWidth !== undefined && !collapsed)
             style.minWidth = minWidth;
-        if (minHeight !== undefined)
+        if (minHeight !== undefined && !collapsed)
             style.minHeight = minHeight;
         if (maxWidth !== undefined)
             style.maxWidth = maxWidth;
@@ -5447,6 +5599,20 @@ var Cell = /** @class */ (function (_super) {
             style.flex = "0 0 auto";
         }
         return style;
+    };
+    Cell.prototype._resizedWindow = function () {
+        var _a;
+        if (this._isLastFlexCell === undefined) {
+            this._isLastFlexCell = ((_a = this._getAnyFlexCell(true)) === null || _a === void 0 ? void 0 : _a.id) === this.id;
+        }
+        else if (!this._isLastFlexCell) {
+            window.removeEventListener("resize", this._afterWindowResized);
+        }
+        if (this._isLastFlexCell) {
+            var prop = this._isXDirection() ? "width" : "height";
+            this.config[prop] = undefined;
+            this.paint();
+        }
     };
     return Cell;
 }(view_1.View));
@@ -5609,7 +5775,7 @@ var Grid = /** @class */ (function (_super) {
                         _this.events.fire(types_1.GridEvents.beforeSort, [column, _this._sortDir ? "asc" : "desc"])) {
                         var text_1 = (_a = html_1.locateNodeByClassName(e, "dhx_grid-header-cell")) === null || _a === void 0 ? void 0 : _a.querySelector(".dhx_grid-header-cell-text_content").innerHTML;
                         var cellConfig = text_1 ? column.header.find(function (item) { return item.text === text_1; }) : null;
-                        var dir = _this._sortDir === "asc" ? "desc" : "asc";
+                        var dir = _this._sortDir === "asc" && _this._sortBy === id ? "desc" : "asc";
                         _this._sort(id, dir, cellConfig === null || cellConfig === void 0 ? void 0 : cellConfig.sortAs);
                     }
                 },
@@ -5628,7 +5794,13 @@ var Grid = /** @class */ (function (_super) {
                 ]);
             },
             onmouseover: {
-                ".dhx_grid-cell": function (e) {
+                ".dhx_grid-cell.dhx_boolean-cell .dhx_checkbox.dhx_cell-editor__checkbox": function (e) {
+                    var path = e.composedPath();
+                    var row = _this.data.getItem(path[2].getAttribute("data-dhx-id"));
+                    var column = _this._getColumn(path[1].getAttribute("data-dhx-col-id"));
+                    showCellTooltip(row, column, e.target);
+                },
+                ".dhx_grid-cell:not(.dhx_boolean-cell)": function (e) {
                     var row = _this.data.getItem(e.composedPath()[1].getAttribute("data-dhx-id"));
                     var column = _this._getColumn(e.target.getAttribute("data-dhx-col-id"));
                     showCellTooltip(row, column, e.target);
@@ -5785,13 +5957,26 @@ var Grid = /** @class */ (function (_super) {
     };
     Grid.prototype.addCellCss = function (rowId, colId, css) {
         var column = this._getColumn(colId);
-        if (column) {
-            if (column.$cellCss[rowId]) {
+        var span = this.config.spans ? this.getSpan(rowId, colId) : null;
+        if (span || column) {
+            var cellStyle = span ? span.css : column.$cellCss[rowId];
+            if (cellStyle) {
                 // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
-                column.$cellCss[rowId] += column.$cellCss[rowId].match(new RegExp(css, "g")) ? "" : " " + css;
+                var newClass = cellStyle.match(new RegExp(css, "g")) ? "" : " " + css;
+                if (span) {
+                    span.css += newClass;
+                }
+                else {
+                    column.$cellCss[rowId] += newClass;
+                }
             }
             else if (this.data.getItem(rowId)) {
-                column.$cellCss[rowId] = css + " ";
+                if (span) {
+                    span.css = css + " ";
+                }
+                else {
+                    column.$cellCss[rowId] = css + " ";
+                }
             }
             this.paint();
         }
@@ -5827,6 +6012,7 @@ var Grid = /** @class */ (function (_super) {
         this.events.fire(types_1.GridEvents.afterColumnShow, [column]);
     };
     Grid.prototype.hideColumn = function (colId) {
+        var _this = this;
         var column = this._getColumn(colId);
         if (!column || column.hidden) {
             return;
@@ -5845,8 +6031,20 @@ var Grid = /** @class */ (function (_super) {
             this.data.filter();
         }
         this.paint();
-        this._checkFilters();
-        this.events.fire(types_1.GridEvents.afterColumnHide, [column]);
+        var comboFilter = this.content.comboFilter;
+        var afterPaint = function () {
+            _this._checkFilters();
+            _this.events.fire(types_1.GridEvents.afterColumnHide, [column]);
+        };
+        if (Object.keys(comboFilter.element).length) {
+            dom_1.awaitRedraw().then(function () {
+                _this.paint();
+                afterPaint();
+            });
+        }
+        else {
+            afterPaint();
+        }
     };
     Grid.prototype.isColumnHidden = function (colId) {
         var column = this._getColumn(colId);
@@ -5963,8 +6161,8 @@ var Grid = /** @class */ (function (_super) {
         var columns = this.config.columns.filter(function (col) { return !col.hidden; });
         var rows = this.data.getRawData(0, -1);
         var span = this.getSpan(rowId, colId);
-        var colInd = core_1.findIndex(columns, function (obj) { return obj.id == colId; });
-        var rowInd = core_1.findIndex(rows, function (obj) { return obj.id == rowId; });
+        var colInd = core_1.findIndex(columns, function (obj) { return obj.id == (span ? span.column : colId); });
+        var rowInd = core_1.findIndex(rows, function (obj) { return obj.id == (span ? span.row : rowId); });
         var x = main_1.getTotalWidth(columns.slice(0, colInd));
         var y = main_1.getTotalHeight(rows.slice(0, rowInd));
         return {
@@ -5997,8 +6195,26 @@ var Grid = /** @class */ (function (_super) {
         this.paint();
     };
     Grid.prototype.getSpan = function (rowId, colId) {
+        var _this = this;
         if (this.config.spans) {
-            var index = core_1.findIndex(this.config.spans, function (span) { return "" + span.row == "" + rowId && "" + span.column == "" + colId; });
+            var rowIndex_1 = this.data.getIndex(rowId.toString());
+            var colIndex_1 = this.config.columns.findIndex(function (col) { return col.id === colId; });
+            var index = core_1.findIndex(this.config.spans, function (span) {
+                var startRowInd = _this.data.getIndex(span.row.toString());
+                var startColInd = _this.config.columns.findIndex(function (col) { return col.id === span.column; });
+                var rows = {
+                    start: startRowInd,
+                    end: span.rowspan ? startRowInd + span.rowspan : startRowInd + 1,
+                };
+                var cols = {
+                    start: startColInd,
+                    end: span.colspan ? startColInd + span.colspan : startColInd + 1,
+                };
+                return (rowIndex_1 >= rows.start &&
+                    rowIndex_1 < rows.end &&
+                    colIndex_1 >= cols.start &&
+                    colIndex_1 < cols.end);
+            });
             return this.config.spans[index];
         }
     };
@@ -6078,6 +6294,13 @@ var Grid = /** @class */ (function (_super) {
     Grid.prototype.edit = function (rowId, colId, editorType) {
         this.editCell(rowId, colId, editorType);
     };
+    Grid.prototype.paint = function () {
+        var customHotkeysLength = this.config.hotkeys ? Object.keys(this.config.hotkeys).length : 0;
+        if (this.keyManager && !(this.keyManager.getKeyStorageLength() - customHotkeysLength)) {
+            this._initHotKey(true);
+        }
+        _super.prototype.paint.call(this);
+    };
     Grid.prototype._createView = function () {
         var _this = this;
         return dom_1.create({
@@ -6140,6 +6363,9 @@ var Grid = /** @class */ (function (_super) {
                 _this.config.data = _this._prepareData(_this.data);
             }
             else {
+                if (ts_data_1.isTreeCollection(_this.data)) {
+                    _this.config.data = _this._prepareData(_this.data);
+                }
                 _this._adjustColumns();
             }
             if (id) {
@@ -6348,7 +6574,7 @@ var Grid = /** @class */ (function (_super) {
             else {
                 delete _this._activeFilters[colId];
             }
-            _this.data.filter(function (i) { return i; });
+            _this.data.filter(function (i) { return !i.hidden; });
             for (var compare in _this._activeFilters) {
                 _this.data.filter(_this._activeFilters[compare], { add: true });
             }
@@ -6493,9 +6719,13 @@ var Grid = /** @class */ (function (_super) {
             return;
         this.config.columns.forEach(function (col) {
             col.header.forEach(function (cell) {
+                var _a;
                 if (cell.content && (cell.content === "selectFilter" || cell.content === "comboFilter")) {
                     var headerWithFilterConfig = col.header.find(function (i) { return i.filterConfig; });
-                    var unique = data_1.getUnique(data, col.id, headerWithFilterConfig ? headerWithFilterConfig.filterConfig.multiselection : null);
+                    var unique = [];
+                    if (cell.content === "comboFilter" && ((_a = cell.filterConfig) === null || _a === void 0 ? void 0 : _a.readonly))
+                        unique.push("");
+                    unique.push.apply(unique, data_1.getUnique(data, col.id, headerWithFilterConfig ? headerWithFilterConfig.filterConfig.multiselection : null));
                     if (col.$uniqueData && col.$uniqueData.length > unique.length) {
                         unique.forEach(function (item) {
                             if (!col.$uniqueData.includes(item)) {
@@ -7626,7 +7856,7 @@ function getRenderConfig(obj, data, wrapperSizes) {
     var currentRows = data.slice(positions.yStart, positions.yEnd);
     return __assign(__assign({}, config), { data: data,
         columns: columns, scroll: obj._scroll, $positions: positions, headerHeight: config.$headerLevel * config.headerRowHeight, footerHeight: config.$footerLevel * config.footerRowHeight, firstColId: columns[0] && columns[0].id, events: obj.events, _events: obj._events, currentColumns: currentColumns,
-        currentRows: currentRows, sortBy: obj._sortBy, sortDir: obj._sortDir, content: obj.content, gridId: obj._uid });
+        currentRows: currentRows, sortBy: obj._sortBy, sortDir: obj._sortDir, content: obj.content, gridId: obj._uid, $renderFrom: "render" });
 }
 exports.getRenderConfig = getRenderConfig;
 function getElementSizes(element) {
@@ -7672,7 +7902,7 @@ function getGridData(renderConfig, shifts) {
     function getCellInfo(e) {
         var rowId = html_1.locate(e, "data-dhx-id");
         var colId = html_1.locate(e, "data-dhx-col-id");
-        var row = renderConfig.currentRows.filter(function (item) { return item.id === rowId; })[0];
+        var row = renderConfig.currentRows.filter(function (item) { return item.id.toString() === rowId; })[0];
         var col = renderConfig.currentColumns.filter(function (item) { return item.id === colId; })[0];
         return {
             row: rowId ? row : {},
@@ -7693,7 +7923,7 @@ function getGridData(renderConfig, shifts) {
             "padding-left": shifts.x,
             "padding-top": shifts.y,
         }, role: "presentation" }, events), [
-        dom_1.el(".dhx_grid_data", __assign(__assign({ _flags: dom_1.KEYED_LIST }, Cells_1.getHandlers(pos.yStart, pos.xStart, renderConfig)), getRowAriaAttrs(renderConfig.data.length)), content),
+        dom_1.el(".dhx_grid_data" + (renderConfig.leftSplit ? ".dhx_grid_fixed_left" : ""), __assign(__assign({ _flags: dom_1.KEYED_LIST }, Cells_1.getHandlers(pos.yStart, pos.xStart, renderConfig)), getRowAriaAttrs(renderConfig.data.length)), content),
         dom_1.el(".dhx_span-spans", { role: "presentation" }, contentSpans),
         dom_1.el(".dhx_grid_selection", { _ref: "selection", "aria-hidden": "true" }, [selection, resizedLine]),
     ]);
@@ -7891,6 +8121,7 @@ function render(vm, obj, htmlEvents, selection, uid) {
             ]),
             FixedCols_1.getFixedColsHeader(renderConfig, layoutState),
             FixedCols_1.getFixedCols(renderConfig, layoutState),
+            FixedRows_1.getFixedDataRows(renderConfig, layoutState),
             isSticky ? null : footer,
         ]),
     ]);
@@ -8218,9 +8449,6 @@ var Combobox = /** @class */ (function (_super) {
         return this.config.disabled;
     };
     Combobox.prototype.clear = function () {
-        if (this.config.disabled) {
-            return false;
-        }
         this.list.selection.remove();
         this._state.value = "";
         this._filter();
@@ -8234,7 +8462,7 @@ var Combobox = /** @class */ (function (_super) {
         return Array.isArray(ids) ? ids.join(",") : ids;
     };
     Combobox.prototype.setValue = function (ids) {
-        return this._setValue(ids);
+        return this._setValue(ids, false);
     };
     Combobox.prototype.addOption = function (value) {
         if (!value || typeof value !== "string")
@@ -8269,7 +8497,7 @@ var Combobox = /** @class */ (function (_super) {
     Combobox.prototype._setValue = function (ids, silent) {
         var _this = this;
         if (silent === void 0) { silent = false; }
-        if (this.config.disabled || !this._exsistId(ids)) {
+        if (!this._exsistId(ids)) {
             return false;
         }
         this._filter();
@@ -9050,7 +9278,9 @@ var List = /** @class */ (function (_super) {
                     return;
                 }
                 _this.selection.add(id, e.ctrlKey || e.metaKey, e.shiftKey);
-                _this._focus = id;
+                if (_this.config.selection) {
+                    _this._focus = id;
+                }
                 _this.events.fire(types_2.ListEvents.click, [id, e]);
                 _this.paint();
             },
@@ -9729,31 +9959,40 @@ function getFixedColsHeader(renderConfig, layout) {
 }
 exports.getFixedColsHeader = getFixedColsHeader;
 function getFixedCols(renderConfig, layout) {
-    if (typeof renderConfig.leftSplit !== "number") {
+    var leftSplit = renderConfig.leftSplit, topSplit = renderConfig.topSplit, configSpans = renderConfig.spans, $totalWidth = renderConfig.$totalWidth, configColumns = renderConfig.columns, $totalHeight = renderConfig.$totalHeight, headerHeight = renderConfig.headerHeight, configFooterHeight = renderConfig.footerHeight, $positions = renderConfig.$positions, $renderFrom = renderConfig.$renderFrom, scroll = renderConfig.scroll, data = renderConfig.data;
+    if (typeof leftSplit !== "number") {
         return;
     }
     var splitHidden = 0;
-    for (var index = 0; index < renderConfig.leftSplit; index++) {
-        if (renderConfig.columns[index].hidden)
+    for (var index = 0; index < leftSplit; index++) {
+        if (configColumns[index].hidden)
             splitHidden++;
     }
-    if (splitHidden === renderConfig.leftSplit) {
+    if (splitHidden === leftSplit) {
         return;
     }
-    var scrollBarWidth = renderConfig.$totalWidth <= layout.wrapper.width ? 0 : html_1.getScrollbarWidth();
-    var fixedContentHeight = renderConfig.$totalHeight + renderConfig.headerHeight + renderConfig.footerHeight;
-    var fixedColsHeight = fixedContentHeight > layout.gridBodyHeight
-        ? fixedContentHeight - scrollBarWidth
-        : fixedContentHeight < layout.gridBodyHeight - scrollBarWidth
-            ? fixedContentHeight
-            : layout.gridBodyHeight;
-    var columns = renderConfig.columns.slice(0, renderConfig.leftSplit - splitHidden);
+    var scrollBarWidth = $totalWidth <= layout.wrapper.width ? 0 : html_1.getScrollbarWidth();
+    var fixedContentHeight = $totalHeight + headerHeight + configFooterHeight;
+    var fixedColsHeight;
+    if (fixedContentHeight > layout.gridBodyHeight) {
+        fixedColsHeight = renderConfig.$footer ? fixedContentHeight - scrollBarWidth : layout.gridBodyHeight;
+    }
+    else if (fixedContentHeight < layout.gridBodyHeight - scrollBarWidth) {
+        fixedColsHeight = fixedContentHeight;
+    }
+    else {
+        fixedColsHeight = renderConfig.$footer
+            ? layout.gridBodyHeight
+            : layout.gridBodyHeight - scrollBarWidth;
+    }
+    var columns = configColumns.slice(0, leftSplit - splitHidden);
     renderConfig.fixedColumnsWidth = main_1.getTotalWidth(columns);
-    var fixedCols = Cells_1.getCells(__assign(__assign({}, renderConfig), { columns: columns, $positions: __assign(__assign({}, renderConfig.$positions), { xStart: 0, xEnd: renderConfig.leftSplit }) }));
+    var renderFrom = $renderFrom === "fixedRows" ? "both" : "fixedCols";
+    var fixedCols = Cells_1.getCells(__assign(__assign({}, renderConfig), { columns: columns, $renderFrom: renderFrom, $positions: __assign(__assign({}, $positions), { xStart: 0, xEnd: leftSplit }) }));
     var isSticky = layout.sticky;
     var footerRowsConfig = __assign(__assign({}, layout), { name: "footer", position: "bottom" });
-    var frozenFooterCols = renderConfig.leftSplit >= 0 &&
-        FixedRows_1.getRows(__assign(__assign({}, renderConfig), { currentColumns: columns, $positions: __assign(__assign({}, renderConfig.$positions), { xStart: 0, xEnd: renderConfig.leftSplit }) }), __assign(__assign({}, layout), { name: "footer", position: "bottom" }));
+    var frozenFooterCols = leftSplit >= 0 &&
+        FixedRows_1.getRows(__assign(__assign({}, renderConfig), { currentColumns: columns, $positions: __assign(__assign({}, $positions), { xStart: 0, xEnd: leftSplit }) }), __assign(__assign({}, layout), { name: "footer", position: "bottom" }));
     var footerHeight = 0;
     if (frozenFooterCols) {
         frozenFooterCols.forEach(function (node) { return (footerHeight += node.attrs.style.height); });
@@ -9773,8 +10012,14 @@ function getFixedCols(renderConfig, layout) {
                         : null,
                 } }, getRowAriaAttrs(frozenFooterCols.length)), frozenFooterCols)
         : null;
-    var pos = renderConfig.$positions;
-    var spans = Cells_1.getSpans(renderConfig, true);
+    var pos = $positions;
+    var filteredSpans = configSpans === null || configSpans === void 0 ? void 0 : configSpans.filter(function (span) {
+        var rowIndex = data.findIndex(function (r) { return r.id == span.row; });
+        var colIndex = columns.findIndex(function (c) { return c.id == span.column; });
+        var topSplited = topSplit && rowIndex > -1 && rowIndex < topSplit;
+        return (colIndex > -1 && colIndex < leftSplit && (!topSplited || (topSplited && renderFrom === "both")));
+    });
+    var spans = filteredSpans && Cells_1.getSpans(__assign(__assign({}, renderConfig), { $renderFrom: renderFrom, spans: filteredSpans }), true);
     var getFixedColAriaAttrs = function () { return ({
         role: "presentation",
         "aria-label": "Fixed column",
@@ -9782,20 +10027,19 @@ function getFixedCols(renderConfig, layout) {
     return [
         dom_1.el(".dhx_grid-fixed-cols-wrap", __assign({ style: {
                 height: fixedColsHeight >= layout.gridBodyHeight
-                    ? (isSticky
-                        ? layout.gridBodyHeight
-                        : layout.gridBodyHeight + renderConfig.headerHeight) - scrollBarWidth
+                    ? (isSticky ? layout.gridBodyHeight : layout.gridBodyHeight + headerHeight) -
+                        scrollBarWidth
                     : fixedColsHeight,
-                paddingTop: renderConfig.headerHeight,
+                paddingTop: headerHeight,
                 overflow: "hidden",
                 width: renderConfig.fixedColumnsWidth,
             } }, getFixedColAriaAttrs()), [
             dom_1.el(".dhx_grid-fixed-cols", __assign(__assign({ style: {
-                    top: -renderConfig.scroll.top + renderConfig.headerHeight - 1 + "px",
+                    top: -scroll.top + headerHeight - 1 + "px",
                     paddingTop: layout.shifts.y,
-                    height: renderConfig.$totalHeight,
+                    height: $totalHeight,
                     position: "absolute",
-                }, _flags: dom_1.KEYED_LIST }, Cells_1.getHandlers(pos.yStart, pos.xStart, renderConfig)), getRowAriaAttrs(renderConfig.data.length)), __spreadArrays([spans && dom_1.el(".dhx_span-spans", { role: "presentation" }, [spans])], fixedCols)),
+                }, _flags: dom_1.KEYED_LIST }, Cells_1.getHandlers(pos.yStart, pos.xStart, renderConfig)), getRowAriaAttrs(data.length)), __spreadArrays(fixedCols, [spans && dom_1.el("span.dhx_span-spans", { role: "presentation" }, [spans])])),
             dom_1.el(".dhx_frozen-cols-border", { role: "presentation" }),
         ]),
         renderConfig.$footer ? frozenFooter : null,
@@ -9907,10 +10151,13 @@ function getRows(config, rowsConfig) {
     var columns = config.currentColumns;
     var rowHeight = config[rowName + "RowHeight"] || 40;
     var rows = buildRows(columns, rowName);
+    var colRange;
+    var colsCount = 1;
     return rows.map(function (row, j) {
         return dom_1.el(".dhx_" + rowName + "-row", __assign({ style: {
                 height: rowHeight,
             } }, getRowAriaAttrs(j)), row.map(function (cell, i) {
+            var _a;
             var css = cell.css || "";
             var column = columns[i];
             var colIndex = pos.xStart + i + 1;
@@ -9956,7 +10203,17 @@ function getRows(config, rowsConfig) {
                         },
                     }, [dom_1.el("div", { class: "dhx_resizer_grip_line" })]),
                 ]);
-                if (rowName === "footer" || j > 0) {
+                var colSpan = column.header && ((_a = column.header[0]) === null || _a === void 0 ? void 0 : _a.colspan);
+                if (colSpan) {
+                    colRange = colSpan;
+                    colsCount = 1;
+                }
+                if (colRange && colsCount !== colRange) {
+                    if (j === 0)
+                        resizable = null;
+                    colsCount++;
+                }
+                if (rowName === "footer") {
                     resizable = null;
                 }
             }
@@ -10143,7 +10400,7 @@ function getFixedRows(config, rowsConfig) {
                 : config[rowsConfig.name + "Height"], width: rowsConfig.sticky ? config.$totalWidth : rowsConfig.wrapper.width - BORDERS }),
         role: "presentation",
     }, [
-        dom_1.el(".dhx_grid-" + rowsConfig.name, {
+        dom_1.el(".dhx_grid-" + rowsConfig.name + (config.leftSplit ? ".dhx_grid_fixed_left" : ""), {
             style: {
                 height: rowsConfig.name === "footer"
                     ? config[rowsConfig.name + "Height"] + BORDERS / 2
@@ -10180,12 +10437,20 @@ function getFixedDataRows(config, layout) {
     if (typeof config.topSplit !== "number") {
         return;
     }
-    var $totalWidth = config.$totalWidth, topSplit = config.topSplit, $positions = config.$positions, data = config.data, $totalHeight = config.$totalHeight, width = config.width;
+    var $totalWidth = config.$totalWidth, topSplit = config.topSplit, leftSplit = config.leftSplit, $positions = config.$positions, data = config.data, $totalHeight = config.$totalHeight, width = config.width, configSpans = config.spans, columns = config.columns;
     var splitedData = data.slice(0, topSplit);
-    var fixedRows = Cells_1.getCells(__assign(__assign({}, config), { data: splitedData, $positions: __assign(__assign({}, $positions), { yStart: 0, yEnd: topSplit }) }));
+    var $renderFrom = "fixedRows";
+    var fixedRows = Cells_1.getCells(__assign(__assign({}, config), { data: splitedData, $renderFrom: $renderFrom, $positions: __assign(__assign({}, $positions), { yStart: 0, yEnd: topSplit }) }));
     var fixedRowsHeight = splitedData.reduce(function (acc, item) { return acc + item.$height; }, 0);
-    var spans = Cells_1.getSpans(config, true);
-    var fixedCols = FixedCols_1.getFixedCols(__assign(__assign({}, config), { headerHeight: 0, data: splitedData, scroll: __assign(__assign({}, config.scroll), { top: -1 }), $positions: __assign(__assign({}, $positions), { yStart: 0, yEnd: topSplit }), $totalHeight: fixedRowsHeight }), __assign(__assign({}, layout), { shifts: __assign(__assign({}, layout.shifts), { y: 0 }) })) || [];
+    var filteredSpans = configSpans === null || configSpans === void 0 ? void 0 : configSpans.filter(function (span) {
+        var rowIndex = splitedData.findIndex(function (r) { return r.id == span.row; });
+        var colIndex = columns.findIndex(function (c) { return c.id == span.column; });
+        var leftSplited = leftSplit && colIndex > -1 && colIndex < leftSplit;
+        var topSplited = rowIndex > -1 && rowIndex < topSplit;
+        return topSplited && !leftSplited;
+    });
+    var spans = filteredSpans && Cells_1.getSpans(__assign(__assign({}, config), { $renderFrom: $renderFrom, data: data, spans: filteredSpans }), true);
+    var fixedCols = FixedCols_1.getFixedCols(__assign(__assign({}, config), { headerHeight: 0, data: splitedData, $renderFrom: $renderFrom, scroll: __assign(__assign({}, config.scroll), { top: -1 }), $positions: __assign(__assign({}, $positions), { yStart: 0, yEnd: topSplit }), $totalHeight: fixedRowsHeight }), __assign(__assign({}, layout), { shifts: __assign(__assign({}, layout.shifts), { y: 0 }) })) || [];
     return [
         dom_1.el(".dhx_grid-fixed-data-rows-wrap", {
             style: {
@@ -10204,7 +10469,7 @@ function getFixedDataRows(config, layout) {
                     paddingLeft: layout.shifts.x,
                     position: "absolute",
                     width: $totalWidth,
-                }, _flags: dom_1.KEYED_LIST }, Cells_1.getHandlers(0, $positions.xStart, config)), getRowAriaAttrs(data.length)), __spreadArrays([spans && dom_1.el(".dhx_span-spans", { role: "presentation" }, [spans])], fixedRows))
+                }, _flags: dom_1.KEYED_LIST }, Cells_1.getHandlers(0, $positions.xStart, config)), getRowAriaAttrs(data.length)), __spreadArrays(fixedRows, [spans && dom_1.el(".dhx_span-spans", { role: "presentation" }, [spans])]))
         ], fixedCols)),
     ];
 }
@@ -11428,11 +11693,13 @@ var showTimeout = null;
 var activeListenersDestructor;
 function getZIndex(node) {
     if (node &&
-        node.classList.contains("dhx_popup--window") &&
-        node.classList.contains("dhx_popup--window_active")) {
+        ((node.classList.contains("dhx_popup--window") &&
+            node.classList.contains("dhx_popup--window_active")) ||
+            node.classList.contains("dhx_popup--window_modal") ||
+            node.classList.contains("dhx_popup"))) {
         return 2147483647;
     }
-    if ((node === null || node === void 0 ? void 0 : node.classList.contains("dhx_popup--window")) || (node === null || node === void 0 ? void 0 : node.classList.contains("dhx_popup--window_modal"))) {
+    if (node === null || node === void 0 ? void 0 : node.classList.contains("dhx_popup--window")) {
         return 2147483646;
     }
     if (node && node.offsetParent) {
@@ -11777,10 +12044,20 @@ var Popup = /** @class */ (function (_super) {
     };
     Popup.prototype._detectOuterClick = function (node) {
         var _this = this;
+        var isDetect = false;
+        var storage = new WeakMap();
         var outerClick = function (event) {
             var target = event.target;
+            var popups = document.querySelectorAll(".dhx_popup");
+            if (isDetect) {
+                popups.forEach(function (popup) { return storage.has(popup) || storage.set(popup, _this._popup); });
+            }
+            else {
+                isDetect = Boolean(popups.length);
+                isDetect && popups.forEach(function (popup) { return storage.set(popup, true); });
+            }
             while (target) {
-                if (target === node || target === _this._popup) {
+                if (target === node || target === _this._popup || storage.get(target) === _this._popup) {
                     return;
                 }
                 target = target.parentNode;
@@ -14348,12 +14625,15 @@ var Loader = /** @class */ (function () {
             var ind = unique.findIndex(function (item) { return item.id === el.id; });
             var involvedElem = ind > -1 ? unique[ind] : null;
             if (involvedElem && involvedElem.saving === false && involvedElem.status === "add") {
-                if (el.status === "delete") {
+                if (el.status === "remove") {
                     unique.splice(ind, 1);
                 }
                 else {
                     involvedElem.obj = el.obj;
                 }
+            }
+            else if (involvedElem && involvedElem.saving === false && involvedElem.status === "update") {
+                unique.splice(ind, 1, el);
             }
             else {
                 unique.push(el);
@@ -14566,8 +14846,9 @@ var Sort = /** @class */ (function () {
         var _this = this;
         if (by && !by.rule) {
             by.rule = function (a, b) {
-                var aa = _this._checkVal(by.as, a[by.by]);
-                var bb = _this._checkVal(by.as, b[by.by]);
+                var _a, _b;
+                var aa = (_a = _this._checkVal(by.as, a[by.by])) !== null && _a !== void 0 ? _a : "";
+                var bb = (_b = _this._checkVal(by.as, b[by.by])) !== null && _b !== void 0 ? _b : "";
                 // [TODO] why we need naturalCompare
                 return helpers_1.naturalCompare(aa.toString(), bb.toString());
             };
@@ -14662,14 +14943,17 @@ var TreeCollection = /** @class */ (function (_super) {
                 value: newItem,
             };
         }
+        var out;
         if (Array.isArray(newItem)) {
-            return newItem.map(function (element, key) {
+            out = newItem.map(function (element, key) {
                 return _this._add(element, index, parent, key);
             });
         }
         else {
-            return this._add(newItem, index, parent);
+            out = this._add(newItem, index, parent);
         }
+        this._applySmart();
+        return out;
     };
     TreeCollection.prototype.getRoot = function () {
         return this._root;
@@ -14742,9 +15026,10 @@ var TreeCollection = /** @class */ (function (_super) {
     TreeCollection.prototype.filter = function (rule, config) {
         var _this = this;
         if (config === void 0) { config = {}; }
-        if (!rule) {
+        if (!rule || !config.add) {
             this.restoreOrder();
-            return;
+            if (!rule)
+                return;
         }
         if (!this._initOrder) {
             this._initOrder = this._order;
@@ -14772,6 +15057,8 @@ var TreeCollection = /** @class */ (function (_super) {
         }
         var newChilds = {};
         this._recursiveFilter(this._filters.filters, config, this._root, 0, newChilds);
+        if (config && !config.smartFilter)
+            this._filters = null;
         Object.keys(newChilds).forEach(function (key) {
             var parentId = _this.getParent(key);
             var current = _this.getItem(key);
@@ -14855,7 +15142,8 @@ var TreeCollection = /** @class */ (function (_super) {
     TreeCollection.prototype.loadItems = function (id, driver) {
         var _this = this;
         if (driver === void 0) { driver = types_1.DataDriver.json; }
-        var url = this.config.autoload + "?id=" + id;
+        var urlPart = this.config.autoload.toString();
+        var url = urlPart + (urlPart.includes("?") ? "&id=" + id : "?id=" + id);
         var proxy = new dataproxy_1.DataProxy(url);
         proxy.load().then(function (data) {
             driver = helpers_1.toDataDriver(driver);
@@ -15143,6 +15431,11 @@ var TreeCollection = /** @class */ (function (_super) {
             }
         }
     };
+    TreeCollection.prototype._applySmart = function () {
+        if (this._filters) {
+            this.filter(this._filters.filters, this._filters.config);
+        }
+    };
     TreeCollection.prototype._fastDeleteChilds = function (target, id) {
         if (this._pull[id]) {
             delete this._pull[id];
@@ -15180,6 +15473,9 @@ var TreeCollection = /** @class */ (function (_super) {
             if (filtered.length) {
                 newChilds[current] = filtered;
             }
+            else if (current === this._root) {
+                newChilds[current] = [];
+            }
         }
         else {
             var customRule = function (item) {
@@ -15199,6 +15495,9 @@ var TreeCollection = /** @class */ (function (_super) {
             var filtered = childs.filter(customRule);
             if (filtered.length) {
                 newChilds[current] = filtered;
+            }
+            else if (current === this._root) {
+                newChilds[current] = [];
             }
         }
         for (var _i = 0, childs_3 = childs; _i < childs_3.length; _i++) {
@@ -15529,7 +15828,7 @@ var DragManager = /** @class */ (function () {
                 this._transferData.dropPosition = "in";
             }
         }
-        else if ((target === id || target === rootId) && dropComponentId === collectionId) {
+        else if ((target === id || (!id && target === rootId)) && dropComponentId === collectionId) {
             return;
         }
         var from = {
@@ -16373,6 +16672,11 @@ var Selection = /** @class */ (function () {
             col.id === this._selectedCell.column.id &&
             row.id === this._selectedCell.row.id) {
             this._selectedCell = this._selectedCells[this._selectedCells.length - 1] || undefined;
+        }
+        if (this._oldSelectedCell &&
+            this._oldSelectedCell.row.id === row.id &&
+            this._oldSelectedCell.column.id === col.id) {
+            this._oldSelectedCell = undefined;
         }
         this.events.fire(types_1.GridSelectionEvents.afterUnSelect, [row, col]);
     };
@@ -17916,7 +18220,7 @@ function getContent() {
         count: {
             calculate: function (_col, roots) {
                 // [todo]
-                return roots.reduce(function (count, c) { return (count += c); }, 0);
+                return roots.length;
             },
             validate: function (colId, data) {
                 return data.reduce(function (items, item) {
@@ -18451,10 +18755,49 @@ var ProGrid = /** @class */ (function (_super) {
                 width: this.config.width,
                 height: this.config.height,
             });
-            var from_1 = this.data.getIndex((_a = renderConfig.currentRows[0]) === null || _a === void 0 ? void 0 : _a.id.toString());
-            var to_1 = this.data.getIndex((_b = renderConfig.currentRows[renderConfig.currentRows.length - 1]) === null || _b === void 0 ? void 0 : _b.id.toString());
+            var from_1;
+            var initialLimit = proxy.config.limit;
+            var limit = initialLimit;
+            var currentRows_1 = renderConfig.currentRows;
+            var firstRow = currentRows_1[0];
+            var lastRow = currentRows_1[currentRows_1.length - 1];
+            var to_1 = this.data.getIndex(lastRow.id);
+            var getRowIndex = function (row) {
+                for (var i = 1; i < currentRows_1.length; i++) {
+                    if ((row === "firstFilledRow" && !currentRows_1[i].$empty && currentRows_1[i - 1].$empty) ||
+                        (row === "firstEmptyRow" && currentRows_1[i].$empty && !currentRows_1[i - 1].$empty)) {
+                        return _this.data.getIndex(currentRows_1[i].id);
+                    }
+                }
+            };
+            if (firstRow.$empty) {
+                if (lastRow.$empty) {
+                    from_1 = this.data.getIndex(firstRow.id);
+                }
+                else {
+                    var firstFilledRowIndex = getRowIndex("firstFilledRow");
+                    var start = firstFilledRowIndex - limit;
+                    if (start < 0)
+                        start = 0;
+                    for (var i = start; i < firstFilledRowIndex; i++) {
+                        if (this.data.getItem(this.data.getId(i)).$empty) {
+                            from_1 = i;
+                            limit = firstFilledRowIndex - i;
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (lastRow.$empty) {
+                from_1 = getRowIndex("firstEmptyRow");
+            }
+            else {
+                from_1 = (_a = getRowIndex("firstEmptyRow")) !== null && _a !== void 0 ? _a : this.data.getIndex(firstRow.id);
+                limit = ((_b = getRowIndex("firstFilledRow")) !== null && _b !== void 0 ? _b : to_1) - from_1;
+            }
             if (!this.data.isDataLoaded(from_1, to_1) && this.data.events.fire(ts_data_1.DataEvents.beforeLazyLoad, [])) {
-                proxy.updateUrl(null, { from: from_1, limit: proxy.config.limit });
+                proxy.updateUrl(null, { from: from_1, limit: limit });
+                proxy.config.limit = initialLimit;
                 this.data.load(proxy).then(function () {
                     _this.config.autoHeight && _this._prepareDataFromTo(_this.data, from_1, to_1);
                 });

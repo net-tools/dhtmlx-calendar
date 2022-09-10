@@ -14,6 +14,8 @@ export declare class Cell extends View implements ICell {
     protected _parent: ILayout;
     protected _ui: IViewLike;
     protected _resizerHandlers: any;
+    private _isLastFlexCell;
+    private _afterWindowResized;
     constructor(parent: string | HTMLElement | ILayout, config: ICellConfig);
     paint(): void;
     isVisible(): boolean;
@@ -36,8 +38,9 @@ export declare class Cell extends View implements ICell {
     protected _getCollapseIcon(): "dxi dxi-chevron-right" | "dxi dxi-chevron-left" | "dxi dxi-chevron-up" | "dxi dxi-chevron-down";
     protected _isLastCell(): boolean;
     protected _getNextCell(): any;
-    protected _getAnyFlexCell(): any;
+    protected _getAnyFlexCell(selfInclude?: boolean): any;
     protected _getResizerView(): any;
     protected _isXDirection(): any;
     protected _calculateStyle(): any;
+    private _resizedWindow;
 }
