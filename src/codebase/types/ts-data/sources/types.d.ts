@@ -57,7 +57,7 @@ export interface IDataConfig {
     init?: anyFunction;
     update?: anyFunction;
     approximate?: IApproximate;
-    autoload?: boolean;
+    autoload?: string;
 }
 export interface IDataCollection<T extends IDataItem = IDataItem> {
     config: IDataConfig;
@@ -94,7 +94,7 @@ export interface IDataCollection<T extends IDataItem = IDataItem> {
     forEach(callback: DataCallback<T>): void;
     save(url: IDataProxy | string): void;
     isSaved(): boolean;
-    getRawData(from: number, to: number, order?: T[], mode?: number): T[];
+    getRawData(from: number, to: number, order?: T[] | null, mode?: number): T[];
 }
 export interface IDataChangeStack {
     order: IDataChange[];
@@ -209,11 +209,13 @@ export declare enum DataEvents {
     beforeRemove = "beforeremove",
     afterRemove = "afterremove",
     change = "change",
+    dataRequest = "dataRequest",
     load = "load",
     loadError = "loaderror",
     beforeLazyLoad = "beforelazyload",
     afterLazyLoad = "afterlazyload",
-    dataRequest = "dataRequest"
+    beforeItemLoad = "beforeItemLoad",
+    afterItemLoad = "afterItemLoad"
 }
 export interface IDataEventsHandlersMap {
     [key: string]: (...args: any[]) => any;
@@ -222,12 +224,14 @@ export interface IDataEventsHandlersMap {
     [DataEvents.afterRemove]: (removedItem: any) => void;
     [DataEvents.beforeAdd]: (newItem: any) => boolean | void;
     [DataEvents.beforeRemove]: (removedItem: any) => boolean | void;
-    [DataEvents.load]: () => void;
     [DataEvents.removeAll]: () => void;
+    [DataEvents.dataRequest]: (from: number, to: number) => void;
+    [DataEvents.load]: () => void;
     [DataEvents.loadError]: (response: any) => void;
+    [DataEvents.beforeItemLoad]: (id: Id) => boolean | void;
+    [DataEvents.afterItemLoad]: (id: Id) => void;
     [DataEvents.beforeLazyLoad]: () => boolean | void;
     [DataEvents.afterLazyLoad]: (from: number, count: number) => void;
-    [DataEvents.dataRequest]: (from: number, to: number) => void;
 }
 export declare enum DragEvents {
     beforeDrag = "beforeDrag",
@@ -245,6 +249,7 @@ export interface IDragInfo {
     source: Id[];
     target: Id;
     dropPosition?: DropPosition;
+    dragItem?: "row" | "column";
 }
 export declare type DragMode = "target" | "both" | "source";
 export declare type DropBehaviour = "child" | "sibling" | "complex";

@@ -1,3 +1,36 @@
+Version 8.0.1 (March 13, 2023)
+
+### Fixes 
+
+- Now the date format must include delimiters (space or symbol), otherwise an error will be thrown
+
+Version 8.0.0 (February 24, 2023)
+----------------------------
+
+Version 7.3.14 (January 17, 2023)
+----------------------------
+
+Version 7.3.13 (December 14, 2022)
+----------------------------
+
+# Version 7.3.12 (November 17, 2022)
+
+### Fixes
+
+- Fix the issue with calling the "clear()" method when two calendars are linked
+
+# Version 7.3.11 (November 3, 2022)
+
+# Version 7.3.10 (October 18, 2022)
+
+# Version 7.3.9 (September 26, 2022)
+
+# Version 7.3.8 (September 19, 2022)
+
+### Fixes
+
+- Fix the issue which appeared when the "width" property specified as a number was used together with "weekNumbers: true"
+
 # Version 7.3.7 (September 5, 2022)
 
 # Version 7.3.6 (August 8, 2022)
@@ -6,8 +39,7 @@
 
 - Now it is possible to set "saturday" as the starting day of the week
 
-Version 7.3.5 (July 7, 2022)
-----------------------------
+# Version 7.3.5 (July 7, 2022)
 
 # Version 7.3.4 (June 7, 2022)
 

@@ -6,6 +6,8 @@ import { Exporter } from "./Exporter";
 import { Combobox } from "../../ts-combobox";
 import { IHandlers, Id } from "../../ts-common/types";
 import { ScrollView } from "../../ts-common/ScrollView";
+import { ICalendarConfig } from "../../ts-calendar";
+import { VNode } from "../../ts-common/dom";
 export interface IGridConfig extends IDragConfig {
     columns?: ICol[];
     spans?: ISpan[];
@@ -17,6 +19,8 @@ export interface IGridConfig extends IDragConfig {
     rowCss?: (row: IRow) => string;
     leftSplit?: number;
     topSplit?: number;
+    rightSplit?: number;
+    bottomSplit?: number;
     selection?: ISelectionType;
     multiselection?: boolean;
     dragItem?: IDragType;
@@ -50,10 +54,12 @@ export interface IGridConfig extends IDragConfig {
     $editable?: {
         row: any;
         col: any;
+        isSpan: boolean;
         editorType?: EditorType;
         editor?: IEditor;
     };
     $resizing?: string | number;
+    $scrollBarWidth?: IScrollBarWidth;
     groupTitleTemplate?: (groupName: string, groupItems: IDataItem[]) => string;
     /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
     editing?: boolean;
@@ -66,6 +72,12 @@ export interface IGridConfig extends IDragConfig {
     /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
     splitAt?: number;
 }
+export interface IScrollBarWidth {
+    x: number;
+    y: number;
+    xState: boolean;
+    yState: boolean;
+}
 interface ICellObj {
     col: ICol;
     row: IRow;
@@ -77,16 +89,25 @@ export interface IScrollState {
     left: number;
     top: number;
 }
+interface IFixedColumns {
+    left: ICol[];
+    right: ICol[];
+}
+interface IFixedRows {
+    top: IRow[];
+    bottom: IRow[];
+}
 export interface IRendererConfig extends IGridConfig {
     scroll?: IScrollState;
     datacollection: any;
     currentColumns?: ICol[];
     currentRows?: IRow[];
+    fixedColumns?: IFixedColumns;
+    fixedRows?: IFixedRows;
     firstColId?: Id;
     headerHeight?: number;
     footerHeight?: number;
     events?: IEventSystem<GridEvents, IEventHandlersMap>;
-    fixedColumnsWidth?: number;
     selection: any;
     sortBy?: Id;
     sortDir?: string;
@@ -135,7 +156,7 @@ export interface IGrid {
     editCell(rowId: Id, colId: Id, editorType?: EditorType): void;
     editEnd(withoutSave?: boolean): void;
     getSortingState(): ISortingState;
-    getHeaderFilter(colId: Id): HTMLElement | Combobox;
+    getHeaderFilter(colId: Id): IHeaderFilter;
     /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
     edit(rowId: Id, colId: Id, editorType?: EditorType): void;
 }
@@ -145,6 +166,26 @@ export interface IProGrid extends IGrid {
 export declare type EditorType = "input" | "select" | "datePicker" | "checkbox" | "combobox" | "multiselect" | "textarea";
 export interface IComboEditorConfig {
     newOptions?: boolean;
+}
+export interface IBaseHandlersMap {
+    [key: string]: (...args: any[]) => any;
+}
+export declare enum HeaderFilterEvent {
+    change = "change"
+}
+export interface IHeaderFilter {
+    column: ICol;
+    config: IRendererConfig;
+    value: string | string[];
+    events: IEventSystem<HeaderFilterEvent>;
+    data?: any[];
+    id?: Id;
+    filterConfig?: IComboFilterConfig;
+    getFilter(): HTMLElement | Combobox;
+    setValue(value: string | string[]): void;
+    clear(): void;
+    focus(): void;
+    blur(): void;
 }
 export interface ICellRect extends ICoords, ISizes {
 }
@@ -158,14 +199,14 @@ export interface ICol {
     maxWidth?: number;
     mark?: IMark | MarkFunction;
     type?: colType;
+    format?: string;
     editorType?: EditorType;
-    editorConfig?: IComboEditorConfig;
+    editorConfig?: IComboEditorConfig | ICalendarConfig;
     editable?: boolean;
     resizable?: boolean;
     sortable?: boolean;
     options?: any[];
     draggable?: boolean;
-    format?: string;
     htmlEnable?: boolean;
     template?: (cellValue: any, row: IRow, col: ICol) => string;
     hidden?: boolean;
@@ -182,6 +223,7 @@ export interface ICol {
     $width?: number;
     $fixed?: boolean;
     $htmlEnable?: boolean;
+    /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
     dateFormat?: string;
     /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
     editing?: boolean;
@@ -230,6 +272,7 @@ export interface ISpan {
     css?: string;
     tooltip?: boolean;
     tooltipTemplate?: (spanValue: any, span: ISpan) => string;
+    $markCss?: string;
 }
 declare type MarkFunction = (cell: any, columnCells: any[], row: IRow, column: ICol) => string;
 export interface IMark {
@@ -264,6 +307,7 @@ export declare enum GridEvents {
     scroll = "scroll",
     expand = "expand",
     filterChange = "filterChange",
+    beforeFilter = "beforeFilter",
     beforeResizeStart = "beforeResizeStart",
     resize = "resize",
     afterResizeEnd = "afterResizeEnd",
@@ -324,7 +368,8 @@ export interface IEventHandlersMap {
     [GridEvents.scroll]: (scrollState: ICoords) => void;
     [GridEvents.beforeSort]: (col: ICol, dir: Dirs) => void | boolean;
     [GridEvents.afterSort]: (col: ICol, dir: Dirs) => void;
-    [GridEvents.filterChange]: (value: string, colId: Id, filterId: fixedRowContent) => void;
+    [GridEvents.filterChange]: (value: string | string[], colId: Id, filterId: fixedRowContent) => void;
+    [GridEvents.beforeFilter]: (value: string, colId: Id) => void | boolean;
     [GridEvents.beforeResizeStart]: (col: ICol, e: MouseEvent) => boolean | void;
     [GridEvents.resize]: (col: ICol, e: MouseEvent) => void;
     [GridEvents.afterResizeEnd]: (col: ICol, e: MouseEvent) => void;
@@ -395,11 +440,18 @@ export interface ISystemEventHandlersMap {
 export interface ICellContent {
     element?: any;
     toHtml: (column: ICol, config: IRendererConfig) => any;
-    match?: (obj: any, value: any, item?: any, multi?: boolean) => boolean;
+    match?: (obj: IMatch) => boolean;
     destroy?: () => void;
     calculate?: (col: any[], roots: any[]) => string | number;
     validate?: (colId: Id, data: any[]) => any[];
     value?: any;
+}
+interface IMatch {
+    val: any;
+    match: any;
+    obj?: any;
+    multi?: boolean;
+    col?: ICol;
 }
 export interface IContentList {
     [key: string]: ICellContent;
@@ -445,7 +497,7 @@ export interface IRow {
     [key: string]: any;
 }
 export interface IEditor {
-    toHTML(): any;
+    toHTML(text?: string): any;
     endEdit(withoutSave?: boolean): void;
 }
 export declare type ISelectionType = "cell" | "row" | "complex";
@@ -458,13 +510,13 @@ export interface ISelectionConfig {
 }
 export interface ISelection {
     config?: ISelectionConfig;
-    setCell(rowId?: Id, colId?: Id, ctrlUp?: boolean, shiftUp?: boolean): void;
-    getCell(): ICell;
+    setCell(rowId?: IRow | Id, colId?: ICol | Id, ctrlUp?: boolean, shiftUp?: boolean): void;
+    getCell(): ICell | void;
     getCells(): ICell[];
     removeCell(rowId?: Id, colId?: Id): void;
     disable(): void;
     enable(): void;
-    toHTML(): any | any[];
+    toHTML(): VNode | VNode[];
 }
 export declare enum GridSelectionEvents {
     beforeUnSelect = "beforeUnSelect",
@@ -480,4 +532,10 @@ export interface IGridSelectionEventsHandlersMap {
     [GridSelectionEvents.beforeUnSelect]: (row: IRow, col: ICol) => boolean | void;
 }
 export declare type TRowStatus = "firstFilledRow" | "firstEmptyRow";
+export declare enum Split {
+    left = "leftSplit",
+    right = "rightSplit",
+    top = "topSplit",
+    bottom = "bottomSplit"
+}
 export {};

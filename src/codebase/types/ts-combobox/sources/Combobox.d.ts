@@ -1,3 +1,4 @@
+import { VNode } from "../../ts-common/dom";
 import { IEventSystem } from "../../ts-common/events";
 import { View } from "../../ts-common/view";
 import { DataCollection, DataEvents, IDataEventsHandlersMap } from "../../ts-data";
@@ -6,6 +7,7 @@ import { List } from "../../ts-list";
 import { Popup } from "../../ts-popup";
 import { Id, IHandlers } from "../../ts-common/types";
 import { ComboboxEvents, ICombobox, IComboboxConfig, IComboboxEventHandlersMap, State } from "./types";
+export declare const $template: VNode;
 export declare class Combobox extends View implements ICombobox {
     data: DataCollection;
     config: IComboboxConfig;
@@ -25,9 +27,9 @@ export declare class Combobox extends View implements ICombobox {
     disable(): void;
     isDisabled(): boolean;
     clear(): void | boolean;
-    getValue<T extends boolean = false>(asArray?: T): T extends true ? string[] : string;
+    getValue<T extends boolean = false>(asArray?: T): T extends true ? Id[] : Id;
     setValue(ids: Id[] | Id): void | boolean;
-    addOption(value: string): void;
+    addOption(value: string, join?: boolean): void;
     destructor(): void;
     /** @deprecated See a documentation: https://docs.dhtmlx.com/ */
     setState(state: State): void;
